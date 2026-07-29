@@ -56,6 +56,12 @@ uv run python scripts/issue_meta.py --mode lastweek
 
 **后续步骤统一用 `start`/`end` 透传给各抓取脚本**（`--start <start> --end <end>`），确保所有脚本用同一窗口。撰写时用 `issue` 和 `range` 作标题。交付时先建 `issues/<filename>/sources/`，成品写入 `issues/<filename>/周报.md`，中间文档写入 `issues/<filename>/sources/`。
 
+**确认 Agent 工具与大模型**：从系统上下文中提取当前 Agent 工具名称和大模型名称，用 AskUserQuestion 一次性让用户确认两项：
+
+> 检测到当前运行环境：Agent 工具 = **[检测到的工具名]**，大模型 = **[检测到的模型名]**。周报末尾的 AI 撰写说明将据此标注。确认无误？
+
+用户确认（或修正）后，把 Agent 工具名和模型名都记录下来——步骤 4 写入 AI 撰写说明时用。
+
 ### 步骤 1 — 信息收集
 
 依次跑这些抓取脚本（每个独立，单源失败不阻塞其他）。**从 skill 根目录运行**，用 `uv run python scripts/<脚本>`（本机 Python 经 uv 管理，直接 `python` 会触发 Microsoft Store 转向器）。stdout 即为 JSON 数据（`{items:[...], errors:[...]}`）：
@@ -163,6 +169,20 @@ uv run python scripts/issue_meta.py --mode lastweek
 | 发刊电头 | 导读末尾，单独一行 | `发刊：YYYY-MM-DD` |
 | 下期预告 | 文末（赛事板块之后），1~2 句 | 基于已知事件的具体预告；无已知事件则省略 |
 | 反馈入口 | 文末最后一行 | `反馈与勘误：[提交 issue](url)`，中性陈述不喊话 |
+| AI 撰写说明 | 文末最后（反馈入口之后），以 `---` 分隔 | Agent 工具和模型名来自步骤 0 用户确认；模板见下方小节 |
+
+### AI 撰写说明（报刊零件）
+
+每期成品末尾（反馈入口之后、全文最后）必须以分隔线 `---` 引出 AI 撰写说明。**Agent 工具名和模型名均使用步骤 0 用户确认的名称**。措辞模板：
+
+---
+**AI 撰写说明**：本文由 [步骤 0 确认的 Agent 工具名] 调用 [步骤 0 确认的模型名] 基于安全内参、BleepingComputer、The Hacker News、Krebs on Security、Dark Reading、Schneier on Security、中央网信办、工信部、Hello-CTFtime 等公开权威信息源整理撰写。内容经人工审核，力求准确可靠。
+
+**约束**：
+- Agent 工具名和模型名严格使用步骤 0 用户确认的名称，不得自行更改或编造。
+- 信息源列表以**本期实际使用的源**为准（未使用的源不列）。
+- 文案保持此模板的中性陈述语气，不加「敬请谅解」「欢迎指正」等客套话。
+- 不允许用 emoji、箭头、直角引号。
 
 ### 赛事条目（信息行式）
 
