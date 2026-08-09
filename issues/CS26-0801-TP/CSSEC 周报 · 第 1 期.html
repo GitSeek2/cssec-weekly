@@ -29,7 +29,7 @@ a{color:inherit;text-decoration:underline;text-underline-offset:2px}  /* 暗色�
 .report{max-width:46rem;margin:0 auto;padding:2.25rem clamp(1rem,4vw,2.5rem) 3.5rem}
 
 /* 刊头：双线 + 衬线大刊名 */
-.masthead{text-align:center;padding:2.5rem 0 1.5rem;border-bottom:3px double var(--ink);margin-bottom:1.75rem}
+.masthead{text-align:left;padding:2.5rem 0 1.5rem;border-bottom:3px double var(--ink);margin-bottom:1.75rem}
 .masthead .publication-name{font-family:var(--serif);font-weight:700;font-size:3rem;
   letter-spacing:.14em;color:var(--ink);line-height:1.15;margin:0}
 .masthead .issue-meta{font-family:var(--mono);font-size:.8125rem;letter-spacing:.25em;
@@ -43,7 +43,8 @@ a{color:inherit;text-decoration:underline;text-underline-offset:2px}  /* 暗色�
 .lede p{margin:.35rem 0}
 .lede .dateline{font-family:var(--mono);font-size:.8125rem;letter-spacing:.12em;
   color:var(--ink-faint);text-align:right;margin-top:.6rem}
-.lede .dateline::before{content:"——";color:var(--accent)}
+.lede .dateline::before{content:"";display:inline-block;width:2em;height:1px;
+  background:var(--accent);vertical-align:middle;margin-right:.5em}
 
 /* 版眉：绿竖条 + 标题 + 尾随发丝线 */
 .section-head{display:flex;align-items:center;gap:.75rem;font-family:var(--serif);
@@ -69,9 +70,20 @@ p.source{font-family:var(--mono);font-size:.8125rem;color:var(--ink-faint);margi
 p.source a{color:var(--ink)}
 ul.event-meta{list-style:none;margin:.75rem 0;padding:0;font-family:var(--mono);
   font-size:.875rem;color:var(--ink-faint)}
-ul.event-meta li{margin:.2rem 0}
-ul.event-meta li::before{content:"— ";color:var(--accent)}
+ul.event-meta li{margin:.2rem 0;padding-left:0}
+ul.event-meta li::before{content:"• ";color:var(--accent);position:static;font-size:1em}
 ul.event-meta strong{color:var(--ink);font-weight:600}
+
+/* 通用列表：报刊常用小圆点项目符（主题绿，克制使用），嵌套用空心圈 */
+ul,ol{margin:.75rem 0}
+ul{list-style:none;padding-left:0}
+ul>li{position:relative;padding-left:1.4em;margin:.3rem 0}
+ul>li::before{content:"•";position:absolute;left:0;font-size:1em;color:var(--accent)}
+ul ul{margin:.3rem 0}
+ul ul>li::before{content:"◦";font-size:1em;color:var(--accent)}
+ol{padding-left:1.5em}
+ol>li{margin:.3rem 0}
+ol>li::marker{font-family:var(--mono);font-weight:600;color:var(--ink)}
 
 /* 引文框 */
 blockquote{margin:1.5rem 0;padding:.9rem 1.1rem;background:var(--panel);
@@ -97,6 +109,7 @@ blockquote p{margin:0}
   font-family:var(--mono);font-size:.8125rem;color:var(--ink-faint);line-height:1.7}
 .colophon .label{font-family:var(--serif);font-weight:700;color:var(--ink)}
 .colophon p{margin:.5rem 0 0}
+.colophon .colophon-tool,.colophon .colophon-model{color:var(--accent);font-weight:600}
 
 /* 代码 / 表格 */
 code{font-family:var(--mono);font-size:.875em;color:var(--ink);background:var(--panel);padding:.1em .35em}
@@ -396,7 +409,7 @@ hr{border:0;border-top:1px solid var(--hairline-strong);margin:2rem 0}
 </section>
 <div class="preview"><span class="label">下期预告</span>8 月 29 日周末，COMPFEST CTF 2026 与 ASIS CTF Quals 2026 相继开赛。前者权重 96.00，值得提前组队。</div>
 <p class="feedback">反馈与勘误：<a href="https://github.com/GitSeek2/cssec-weekly/issues">提交 issue</a></p>
-<footer class="colophon"><span class="label">AI 撰写说明</span><p>本文由 Claude Code 调用 deepseek-v4-flash[1m] 基于安全内参、The Hacker News、BleepingComputer、Krebs on Security、Dark Reading、Schneier on Security、中央网信办、公安部网安局、工信部、Hello-CTFtime 等公开权威信息源整理撰写。内容经人工审核，力求准确可靠。</p></footer>
+<footer class="colophon"><span class="label">AI 撰写说明</span><p>本文由 <span class="colophon-tool">Claude Code</span> 调用 <span class="colophon-model">deepseek-v4-flash[1m]</span> 基于安全内参、The Hacker News、BleepingComputer、Krebs on Security、Dark Reading、Schneier on Security、中央网信办、公安部网安局、工信部、Hello-CTFtime 等公开权威信息源整理撰写。内容经人工审核，力求准确可靠。</p></footer>
 </article>
 </body>
 </html>
