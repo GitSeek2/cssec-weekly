@@ -1,13 +1,18 @@
 ---
 name: cssec-weekly
-description: 撰写《CSSEC 周报》。当用户说"写周报/CSSEC周报/本周安全动态/该发刊了"等时触发。自动抓取网络安全信息源（覆盖时间范围在步骤 0 与用户确认，默认近 10 天），给出候选头条主题供用户选定，再按五大板块产出可读的 Markdown 长文并落盘存档。目标读者是大学生技术社团学生，调性：专业但有趣、可读易读优先于全面深入。文风要求：资深报刊编辑口吻，非公众号科普体（详见 写作风格.md）。
+description: 撰写《CSSEC 周报》。当用户说"写周报/CSSEC周报/本周安全动态/该发刊了"等时触发。自动抓取网络安全信息源（覆盖时间范围在步骤 0 与用户确认，默认近 10 天），给出候选头条主题供用户选定，再按五大板块产出可读的 Markdown 长文并落盘存档。目标读者是大学生技术社团学生，调性：专业但有趣、可读易读优先于全面深入。文风要求：资深报刊编辑口吻，非公众号科普体（详见 references/写作风格.md）。
+license: MIT
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
+metadata:
+  version: 1.0.0
+  author: CSSEC
+compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源（thn/bc/krebs/darkreading/schneier）需 HTTP 代理 127.0.0.1:7897。
 ---
 # CSSEC 周报
 
 > 一句话原则：**内容不在多也不在精，而在于可读、易读、有用。** 当「全面/深入」与「可读/易读」冲突时，永远优先后者。
 
-> 文风：先进入 `写作风格.md` 序章「写作者人设」和 Part 0「编辑思维三原则」再动笔——它教你怎么像一个编辑那样思考和改稿，既给正向写法（简讯写作法、头条写作法），也给按思维模式分类的删除清单和格式配额。**撰写前必读 Part 0+1**，交付前必须走完 Part 1 的四步改稿流程，逐项核对 Part 4 删除清单和 Part 5 配额。
+> 文风：先进入 `references/写作风格.md` 序章「写作者人设」和 Part 0「编辑思维三原则」再动笔——它教你怎么像一个编辑那样思考和改稿，既给正向写法（简讯写作法、头条写作法），也给按思维模式分类的删除清单和格式配额。**撰写前必读 Part 0+1**，交付前必须走完 Part 1 的四步改稿流程，逐项核对 Part 4 删除清单和 Part 5 配额。
 
 ## 你在做什么
 
@@ -43,13 +48,13 @@ allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
 
 ```
 # rolling + 默认 10 天（最常见的默认情况）
-uv run python scripts/issue_meta.py
+uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py
 
 # rolling + 指定天数
-uv run python scripts/issue_meta.py --mode rolling --days <天数>
+uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode rolling --days <天数>
 
 # lastweek（天数自动对齐）
-uv run python scripts/issue_meta.py --mode lastweek
+uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 ```
 
 输出 JSON：`issue`（本期期号）、`mode`（窗口来源）、`start`/`end`/`range`（时间窗）、`days`（实际跨度天数）、`filename`（建议成品**目录名**，不含 `.md` 后缀）。期号逻辑：扫 `issues/` 已有目录/文件取最大期号 +1，空则第 1 期。
@@ -64,29 +69,29 @@ uv run python scripts/issue_meta.py --mode lastweek
 
 ### 步骤 1 — 信息收集
 
-依次跑这些抓取脚本（每个独立，单源失败不阻塞其他）。**从 skill 根目录运行**，用 `uv run python scripts/<脚本>`（本机 Python 经 uv 管理，直接 `python` 会触发 Microsoft Store 转向器）。stdout 即为 JSON 数据（`{items:[...], errors:[...]}`）：
+依次跑这些抓取脚本（每个独立，单源失败不阻塞其他）。**可在任意目录运行（脚本路径已用 ${CLAUDE_SKILL_DIR} 绝对定位）**，用 `uv run python ${CLAUDE_SKILL_DIR}/scripts/<脚本>`（本机 Python 经 uv 管理，直接 `python` 会触发 Microsoft Store 转向器）。stdout 即为 JSON 数据（`{items:[...], errors:[...]}`）：
 
-> **境外英文源（thn/bc/krebs/darkreading/schneier）需走代理**：运行前 `export HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897`（urllib 自动识别）。这些源的 title/summary 透传英文，**撰写时再译写为中文**（套用 `写作风格.md` Part 2 的新闻标题与简讯规范），成品不得留英文标题原文。出处行标注英文刊名（`· BleepingComputer`/`· The Hacker News` 等），与中文源 `· 安全内参` 并列。
+> **境外英文源（thn/bc/krebs/darkreading/schneier）需走代理**：运行前 `export HTTPS_PROXY=http://127.0.0.1:7897 HTTP_PROXY=http://127.0.0.1:7897`（urllib 自动识别）。这些源的 title/summary 透传英文，**撰写时再译写为中文**（套用 `references/写作风格.md` Part 2 的新闻标题与简讯规范），成品不得留英文标题原文。出处行标注英文刊名（`· BleepingComputer`/`· The Hacker News` 等），与中文源 `· 安全内参` 并列。
 >
 > **跨源去重（关键）**：境外源与安全内参常报道同一事件（同一 CVE/同一攻击多源都会报）。**英文源与安全内参同事件的合并为一条，优先保留英文一手链接作为出处**——这是降低单源依赖、贴近真实媒体的核心做法（详见取舍规则 5、9）。
 
 | 脚本                                                               | 抓什么                                       |
 | ------------------------------------------------------------------ | -------------------------------------------- |
-| `uv run python scripts/fetch_secrss.py --start <start> --end <end>`                       | 安全内参（**主内容来源**） |
-| `uv run python scripts/fetch_secrss.py --author 公安部网安局 --start <start> --end <end>` | 公安部网安局口径（监管/通报）                |
-| `uv run python scripts/fetch_ctftime_cn.py --start <start> --end <end>`                   | 国内 CTF/网安赛事                            |
-| `uv run python scripts/fetch_ctftime_global.py --start <start> --end <end>`               | 国际赛事                                     |
-| `uv run python scripts/fetch_cac.py --start <start> --end <end>`                          | 中央网信办                                   |
-| `uv run python scripts/fetch_miit.py --start <start> --end <end>`                         | 工信部                                       |
-| `uv run python scripts/fetch_thn.py --start <start> --end <end>`                         | The Hacker News（**国际事件流主力**，英文） |
-| `uv run python scripts/fetch_bleepingcomputer.py --start <start> --end <end>`            | BleepingComputer（国际深度+一手链接，英文） |
-| `uv run python scripts/fetch_krebs.py --start <start> --end <end>`                       | Krebs on Security（独家深度调查，英文）     |
-| `uv run python scripts/fetch_darkreading.py --start <start> --end <end>`                 | Dark Reading（企业安全视角，英文）          |
-| `uv run python scripts/fetch_schneier.py --start <start> --end <end>`                    | Schneier on Security（观点/趋势，英文）     |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_secrss.py --start <start> --end <end>`                       | 安全内参（**主内容来源**） |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_secrss.py --author 公安部网安局 --start <start> --end <end>` | 公安部网安局口径（监管/通报）                |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_ctftime_cn.py --start <start> --end <end>`                   | 国内 CTF/网安赛事                            |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_ctftime_global.py --start <start> --end <end>`               | 国际赛事                                     |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_cac.py --start <start> --end <end>`                          | 中央网信办                                   |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_miit.py --start <start> --end <end>`                         | 工信部                                       |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_thn.py --start <start> --end <end>`                         | The Hacker News（**国际事件流主力**，英文） |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_bleepingcomputer.py --start <start> --end <end>`            | BleepingComputer（国际深度+一手链接，英文） |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_krebs.py --start <start> --end <end>`                       | Krebs on Security（独家深度调查，英文）     |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_darkreading.py --start <start> --end <end>`                 | Dark Reading（企业安全视角，英文）          |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_schneier.py --start <start> --end <end>`                    | Schneier on Security（观点/趋势，英文）     |
 
 每条 item 字段：`source / section_guess / title / url / date / summary / extra`。`section_guess` 只是初判，你可调整。
 
-**赛事板块专用工具**：撰写「赛事活动」前，跑 `uv run python scripts/format_events.py --start <start> --end <end>`，它直接输出可粘贴的 Markdown 片段（信息行式：H3 + 一句话点睛 + 竞赛时间/链接两行），已自动算好 **UTC+8 竞赛时间范围** 和 **官网 + CTFTime 双链接**。你只需润色「一句话点睛」、删掉不采纳的赛事。加 `--json` 则输出统一结构（兼容信息池记录，`extra.time_range` / `extra.ctftime_url` 可见）。
+**赛事板块专用工具**：撰写「赛事活动」前，跑 `uv run python ${CLAUDE_SKILL_DIR}/scripts/format_events.py --start <start> --end <end>`，它直接输出可粘贴的 Markdown 片段（信息行式：H3 + 一句话点睛 + 竞赛时间/链接两行），已自动算好 **UTC+8 竞赛时间范围** 和 **官网 + CTFTime 双链接**。你只需润色「一句话点睛」、删掉不采纳的赛事。加 `--json` 则输出统一结构（兼容信息池记录，`extra.time_range` / `extra.ctftime_url` 可见）。
 
 **CNVD（漏洞共享平台）需人工辅助**：它有反爬封锁，脚本无法抓。读条目池后，若"漏洞情报"偏薄，用 AskUserQuestion 问用户："是否有需要补充的选定时间范围内漏洞（CNVD/CVE）？粘贴文本或链接即可。"
 
@@ -116,7 +121,7 @@ uv run python scripts/issue_meta.py --mode lastweek
 
 ### 步骤 3 — 撰写
 
-> **撰写前必读 `写作风格.md`**——先读序章人设和 Part 0 编辑思维三原则（怎么想），再读 Part 1 改稿流程（怎么改），最后查 Part 4 删除清单和 Part 5 格式速查（别怎么写）。三者都是硬约束。头条写作另见 Part 3 五段骨架。
+> **撰写前必读 `references/写作风格.md`**——先读序章人设和 Part 0 编辑思维三原则（怎么想），再读 Part 1 改稿流程（怎么改），最后查 Part 4 删除清单和 Part 5 格式速查（别怎么写）。三者都是硬约束。头条写作另见 Part 3 五段骨架。
 
 > **风格基准（黄金样本）**：参照 `issues/第3期_2026-07-29/周报.md`（成品）与同目录 `STYLE_NOTES.md`（逐条风格标注）。新期撰写前先读这两个文件，模仿其标题节奏、简讯密度、头条纵深、版面零件。注意 `STYLE_NOTES.md` 已标出第 3 期未达新规范处（新闻标题、版面零件、一手素材），新期须向新规范对齐。
 
@@ -124,7 +129,7 @@ uv run python scripts/issue_meta.py --mode lastweek
 - **其余信息** → 按五大板块分类。**单条目结构**（便于扫读）：
   1. **标题**（H3）：一句话点明事件，含关键名词（厂商/CVE/赛事名）。
   2. **一句话摘要**：发生了什么 + 影响谁。
-  3. **正文（2~4 句）**：背景 + 关键细节 + 必要时 1 句具体影响点评（点评密度见 `写作风格.md` 第 5 章）。
+  3. **正文（2~4 句）**：背景 + 关键细节 + 必要时 1 句具体影响点评（点评密度见 `references/写作风格.md` 第 5 章）。
   4. **出处链接**：行内 Markdown 链接附在条目末尾。
 - **无料的板块直接省略**，不要硬凑。
 
@@ -150,7 +155,7 @@ uv run python scripts/issue_meta.py --mode lastweek
 
 ## 输出格式规范
 
-本节只规定**文档结构**（标题层级、条目要素、链接形式）。**文风、Markdown 标记配额、标点、点评密度等全部约束见 `写作风格.md`（撰写前必读，交付前按其自查清单逐项核对）。**
+本节只规定**文档结构**（标题层级、条目要素、链接形式）。**文风、Markdown 标记配额、标点、点评密度等全部约束见 `references/写作风格.md`（撰写前必读，交付前按其自查清单逐项核对）。**
 
 - **标题层级**：期数 H1；板块 H2；条目标题 H3；条目内不再深层嵌套。
 - **导读/摘要**：开篇 1~2 句「本期导读」；每条目开篇 1 句摘要。
@@ -160,7 +165,7 @@ uv run python scripts/issue_meta.py --mode lastweek
 
 ### 报刊零件（出版物仪式感）
 
-除板块内容外，每期成品必须包含以下固定零件（措辞规范见 `写作风格.md` Part 7）：
+除板块内容外，每期成品必须包含以下固定零件（措辞规范见 `references/写作风格.md` Part 7）：
 
 | 零件 | 位置 | 说明 |
 |---|---|---|
@@ -200,7 +205,7 @@ uv run python scripts/issue_meta.py --mode lastweek
 - **竞赛时间**一律标 `（UTC+8）`（数据源 `Global.json` 本身带 UTC+8；国内赛事默认 UTC+8）。
 - **链接**：国际赛事给「官网 + CTFTime」两个行内链接；国内赛事只给 `[官网](…)`。
 - 延期赛事标题加「（已延期）」，正文说明新日期未公布。
-- 时间/链接用无序列表，不计入正文「叙述优先」的克制——它是结构化信息，属合理用途（详见 `写作风格.md` Part 5）。
+- 时间/链接用无序列表，不计入正文「叙述优先」的克制——它是结构化信息，属合理用途（详见 `references/写作风格.md` Part 5）。
 
 ### 头条相关文献（头条专属）
 
@@ -224,11 +229,11 @@ uv run python scripts/issue_meta.py --mode lastweek
 
 ## 质量清单（交付前自查）
 
-交付前逐项核对 **`CHECKLIST.md`**——它是结构 + 配额 + 删除清单三组合并去重的速查卡（含本次新增的「跨源去重」「头条至少 1 条一手素材」「新闻标题抽检」「报刊零件齐全」等条目）。文风自查的具体判据见 `写作风格.md` Part 0~5。
+交付前逐项核对 **`CHECKLIST.md`**——它是结构 + 配额 + 删除清单三组合并去重的速查卡（含本次新增的「跨源去重」「头条至少 1 条一手素材」「新闻标题抽检」「报刊零件齐全」等条目）。文风自查的具体判据见 `references/写作风格.md` Part 0~5。
 
 ## 深度参考
 
-- `写作风格.md`——撰写前**必读**，是文风硬约束。序章人设 + Part 0 思维三原则 + Part 1 改稿流程为必读；Part 2~7 为写作与自查参考。
+- `references/写作风格.md`——撰写前**必读**，是文风硬约束。序章人设 + Part 0 思维三原则 + Part 1 改稿流程为必读；Part 2~7 为写作与自查参考。
 - `CHECKLIST.md`——交付前逐项核对的速查卡（结构 + 配额 + 删除清单三组合并去重版）。
-- `信息源.md`——全部信息源（含境外英文源）地址、字段与取用规则（需要时再读）。
-- `设计规格.md`——设计意图存档（项目定位 + 取用规则理由，需要时再读）。
+- `references/信息源.md`——全部信息源（含境外英文源）地址、字段与取用规则（需要时再读）。
+- `references/设计规格.md`——设计意图存档（项目定位 + 取用规则理由，需要时再读）。
