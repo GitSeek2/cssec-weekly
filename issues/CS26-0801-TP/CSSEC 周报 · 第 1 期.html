@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="cssec-weekly/md2html.py">
 <title>CSSEC 周报</title>
+<link rel="preconnect" href="https://fonts.googleapis.cn">
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.cn/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap">
 <style>
 :root{
   --bg:#FCFCFD;          /* 暖白纸面 */
@@ -17,9 +20,14 @@
   --panel-strong:#F0F0EE; /* 面板底（文献块） */
   --accent:#016737;      /* 主题绿：仅做状态与强调，不装饰链接 */
   --accent-soft:#E5F0EA; /* 绿浅底 */
-  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
-  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Courier New",monospace;
+  /* 字栈：--serif（报刊衬线）/ --mono（技术 mono）优先用 <head> 加载的网络字体
+     （Noto Serif SC + JetBrains Mono，fonts.googleapis.cn，display:swap）；
+     断网或镜像失效时自动落到下方系统字栈，离线仍可读。
+     --sans（正文）：西文/数字排在等宽 mono 前（技术质感），中文仍落无衬线——
+     等宽字体无 CJK 字形，中文自动落到后续雅黑/苹方等，西文则保持等宽。 */
+  --serif:"Noto Serif SC","Source Han Serif SC","Noto Serif CJK SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
+  --sans:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"PingFang SC","Microsoft YaHei","Noto Sans SC","Source Han Sans SC","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Courier New",monospace;
 }
 *{box-sizing:border-box;border-radius:0}   /* 直角 = 严谨 */
 html{-webkit-text-size-adjust:100%}
