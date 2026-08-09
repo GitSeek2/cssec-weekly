@@ -1,27 +1,21 @@
 # CSSEC Weekly
 
-CSSEC 网安周报，一个由 Agent Skill 驱动的安全周刊。
+CSSEC 周报，由 Agent Skill 驱动，自动抓取国内外安全动态、甄选头条、按报刊版式成稿，每周一期。
 
-## 结构
+## 看刊
 
-- `skills/cssec-weekly/` —— SKILL 定义（`SKILL.md` + `references/` + `scripts/`，报刊内容创作）
-- `scripts/` —— 发刊脚本（`release_notes.py` / `append_history.py`）
-- `issues/` —— 每期成品 + 中间文档存档（仓库根）
-- `HISTORY.md` —— 发刊史（逐期记录刊号 / 日期 / 头条，Release Note 数据源）
-- `.github/workflows/release.yml` —— 发刊 CI：打上刊号 tag 后自动发布 GitHub Releases
-- `AGENTS.md` —— 仓库层工作流约定（发刊 / 发布流程）
+每期成品（Markdown / HTML / PDF 三格式）发布在 [GitHub Releases](https://github.com/GitSeek2/cssec-weekly/releases)，可直接下载；历史成品与中间稿归档于 `issues/`。
 
-## 存档
+## 内容板块
 
-每期成品（`CSSEC 周报 · 第 N 期.md` + 自包含 HTML `.html` + PDF `.pdf`）归档于 `issues/CSYY-MMWW-TP/`（`CS`=CSSEC 前缀，`YYMMWW`=发刊年 / 月 / 当月第几周，`TP`=中图分类）+ 中间文档。
-
-打上刊号 tag（如 `CS26-0801-TP`）并推送后，GitHub Actions 自动把该期 md / html / pdf 与 `sources/` 中间稿发布为 [GitHub Releases](https://github.com/GitSeek2/cssec-weekly/releases)，Release Note 取自 `HISTORY.md`。发布前先用 `scripts/append_history.py` 追加本期发刊史条目（完整发布流程见 `AGENTS.md`）。
+- 本期主题（头条深度报道）
+- 态势感知 / 漏洞情报 / 前沿技术 / 政策法规 / 赛事活动
 
 ## 致谢
 
-以下信息源为本刊提供了持续、高质量的报道，在此致谢：
+以下信息源为本刊提供了持续、高质量的报道：
 
-- [安全内参](https://www.secrss.com/)（奇安信）—— 主内容来源，七年未断更
+- [安全内参](https://www.secrss.com/)（奇安信）—— 主内容来源
 - [The Hacker News](https://thehackernews.com/) —— 国际事件流主力
 - [BleepingComputer](https://www.bleepingcomputer.com/) —— 深度报道与一手链接
 - [Krebs on Security](https://krebsonsecurity.com/) —— 独家深度调查
