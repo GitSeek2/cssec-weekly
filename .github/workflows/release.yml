@@ -1,0 +1,53 @@
+# 发刊发布：打上「刊号 tag」（如 CS26-0801-TP，即期目录名）并推送后，
+# 自动把该期的 md / html / pdf 三份成品与 sources/ 中间稿发布为 GitHub Release。
+# Release Note 由 HISTORY.md 生成（scripts/release_notes.py）。
+name: 发刊发布
+
+on:
+  push:
+    tags:
+      - 'CS*'            # 自封刊号 tag，形如 CS26-0801-TP
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1) 生成 Release Note；tag 即期目录名，直接定位 issues/<tag>/
+      - name: 生成 Release Note
+        id: notes
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          ISSUE_N="$(python3 skills/cssec-weekly/scripts/release_notes.py \
+            --dirname "$TAG" --issue-only)"
+          python3 skills/cssec-weekly/scripts/release_notes.py \
+            --dirname "$TAG" --history HISTORY.md > RELEASE_NOTES.md
+          echo "ISSUE_N=$ISSUE_N" >> "$GITHUB_ENV"
+
+      # 2) 打包资产：三份成品（CSSEC* 通配，避免误收 sources/ 下的中间稿）+ 整期 zip（含 sources）
+      #    zip 用 Python 标准库 shutil.make_archive，避免依赖 runner 是否预装 zip 命令
+      - name: 打包资产
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          mkdir -p dist
+          cp "issues/$TAG"/CSSEC*.md "issues/$TAG"/CSSEC*.html "issues/$TAG"/CSSEC*.pdf dist/
+          python3 - "$TAG" <<'PY'
+          import shutil, sys
+          tag = sys.argv[1]
+          shutil.make_archive(f"dist/cssec-weekly-{tag}", "zip", root_dir=f"issues/{tag}")
+          PY
+
+      # 3) 为已存在的 tag 建 Release 并挂资产（文件名含空格与「·」，由 action 的 glob 处理）
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CSSEC 周报 第 ${{ env.ISSUE_N }} 期
+          body_path: RELEASE_NOTES.md
+          files: dist/*
+          draft: false

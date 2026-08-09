@@ -168,6 +168,23 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/html2pdf.py ${CLAUDE_SKILL_DIR}/../../
 - 生成后对照 `references/CHECKLIST.md`「六、HTML / PDF 版自查」核对分页。
 - 异常时脚本写 stderr 并退非零，不要忽略报错继续交付。
 
+### 步骤 7 — 追加发刊史并打 tag 发布（发刊时建议做）
+
+三格式成品齐全后，把本期「刊号 / 发刊日期 / 头条标题」追加进仓库根 `HISTORY.md`（发刊史，Release Note 的数据源）：
+
+```
+uv run python ${CLAUDE_SKILL_DIR}/scripts/append_history.py --dirname <dirname>
+```
+
+- **幂等**：`HISTORY.md` 已有该期条目则跳过；不传 `--dirname` 时自动定位最新一期。
+- 随后用刊号打 tag 并推送，GitHub Actions（`.github/workflows/release.yml`）自动把该期 md/html/pdf 三份成品 + `sources/` 中间稿发布为 GitHub Release，**Release Note 由 `scripts/release_notes.py` 依据 `HISTORY.md` 生成**：
+
+```
+git tag <dirname> && git push origin <dirname>
+```
+
+- tag 即期目录刊号（如 `CS26-0802-TP`）；`HISTORY.md` 缺该期条目时发刊 CI 会失败并提示，先跑 append_history.py 再打 tag。
+
 ---
 
 ## 取舍规则（贯穿全程，质量把关关键）
