@@ -26,6 +26,3 @@ Desktop.ini
 .env.local
 .venv/
 venv/
-
-# UV (Python package manager)
-.uv/

@@ -2,9 +2,14 @@
 
 CSSEC 网安周报，基于 Agent Skill 的网安周报。
 
+## 结构
+
+- `skills/cssec-weekly/` —— SKILL 定义（`SKILL.md` + `references/` + `scripts/`）
+- `issues/` —— 每期成品 + 中间文档存档（仓库根）
+
 ## 存档
 
-每期成品 + 中间文档存档于 `issues/`。
+每期成品（`CSSEC 周报 · 第 N 期.md` + 自包含 HTML `.html` + PDF `.pdf`）归档于序列号目录 `issues/issue-NNN/`（补零 3 位）+ 中间文档。
 
 ## 致谢
 
