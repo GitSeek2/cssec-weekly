@@ -259,6 +259,7 @@ _SOURCE = re.compile(r"^出处[：:]")
 _PREVIEW = re.compile(r"^下期预告[：:]")
 _FEEDBACK = re.compile(r"^反馈与勘误[：:]")
 _COLOPHON = re.compile(r"^\*\*AI 撰写说明\*\*[：:]")
+_COLOPHON_AGENT = re.compile(r"本文由(.+?)调用(.+?)基于")
 _DATA_LINE = re.compile(r"^(竞赛时间|链接)[：:]")
 _QUOTE_ATTR = re.compile(r"^[—-]{1,3}\s*")
 _LABEL_COLON = re.compile(r"^[^：:]*[：:]")
@@ -431,6 +432,21 @@ def _after_label(text):
     return text[m.end():] if m else text
 
 
+def _colophon_body_html(text):
+    """AI 撰写说明正文：Agent 工具名 / 模型名用主题绿突出（措辞模板见 SKILL.md）。"""
+    html_out = render_inline(text)
+    m = _COLOPHON_AGENT.search(text)
+    if not m:
+        return html_out
+    for token, cls in ((m.group(1).strip(), "colophon-tool"),
+                       (m.group(2).strip(), "colophon-model")):
+        if token:
+            html_out = html_out.replace(
+                html.escape(token),
+                '<span class="{}">{}</span>'.format(cls, html.escape(token)))
+    return html_out
+
+
 def _data_line_html(text):
     m = _LABEL_COLON.match(text)
     if m:
@@ -508,7 +524,7 @@ def block_to_html(b):
         if role == "colophon":
             return ('<footer class="colophon"><span class="label">AI 撰写说明</span>'
                     "<p>{}</p></footer>".format(
-                        render_inline(_after_label(b["text"]))))
+                        _colophon_body_html(_after_label(b["text"]))))
         return "<p>{}</p>".format(render_inline(b["text"]))
     if t == "h2":
         return '<h2 class="section-head">{}</h2>'.format(render_inline(b["text"]))
@@ -565,7 +581,7 @@ a{color:inherit;text-decoration:underline;text-underline-offset:2px}  /* 暗色�
 .report{max-width:46rem;margin:0 auto;padding:2.25rem clamp(1rem,4vw,2.5rem) 3.5rem}
 
 /* 刊头：双线 + 衬线大刊名 */
-.masthead{text-align:center;padding:2.5rem 0 1.5rem;border-bottom:3px double var(--ink);margin-bottom:1.75rem}
+.masthead{text-align:left;padding:2.5rem 0 1.5rem;border-bottom:3px double var(--ink);margin-bottom:1.75rem}
 .masthead .publication-name{font-family:var(--serif);font-weight:700;font-size:3rem;
   letter-spacing:.14em;color:var(--ink);line-height:1.15;margin:0}
 .masthead .issue-meta{font-family:var(--mono);font-size:.8125rem;letter-spacing:.25em;
@@ -579,7 +595,8 @@ a{color:inherit;text-decoration:underline;text-underline-offset:2px}  /* 暗色�
 .lede p{margin:.35rem 0}
 .lede .dateline{font-family:var(--mono);font-size:.8125rem;letter-spacing:.12em;
   color:var(--ink-faint);text-align:right;margin-top:.6rem}
-.lede .dateline::before{content:"——";color:var(--accent)}
+.lede .dateline::before{content:"";display:inline-block;width:2em;height:1px;
+  background:var(--accent);vertical-align:middle;margin-right:.5em}
 
 /* 版眉：绿竖条 + 标题 + 尾随发丝线 */
 .section-head{display:flex;align-items:center;gap:.75rem;font-family:var(--serif);
@@ -605,9 +622,20 @@ p.source{font-family:var(--mono);font-size:.8125rem;color:var(--ink-faint);margi
 p.source a{color:var(--ink)}
 ul.event-meta{list-style:none;margin:.75rem 0;padding:0;font-family:var(--mono);
   font-size:.875rem;color:var(--ink-faint)}
-ul.event-meta li{margin:.2rem 0}
-ul.event-meta li::before{content:"— ";color:var(--accent)}
+ul.event-meta li{margin:.2rem 0;padding-left:0}
+ul.event-meta li::before{content:"• ";color:var(--accent);position:static;font-size:1em}
 ul.event-meta strong{color:var(--ink);font-weight:600}
+
+/* 通用列表：报刊常用小圆点项目符（主题绿，克制使用），嵌套用空心圈 */
+ul,ol{margin:.75rem 0}
+ul{list-style:none;padding-left:0}
+ul>li{position:relative;padding-left:1.4em;margin:.3rem 0}
+ul>li::before{content:"•";position:absolute;left:0;font-size:1em;color:var(--accent)}
+ul ul{margin:.3rem 0}
+ul ul>li::before{content:"◦";font-size:1em;color:var(--accent)}
+ol{padding-left:1.5em}
+ol>li{margin:.3rem 0}
+ol>li::marker{font-family:var(--mono);font-weight:600;color:var(--ink)}
 
 /* 引文框 */
 blockquote{margin:1.5rem 0;padding:.9rem 1.1rem;background:var(--panel);
@@ -633,6 +661,7 @@ blockquote p{margin:0}
   font-family:var(--mono);font-size:.8125rem;color:var(--ink-faint);line-height:1.7}
 .colophon .label{font-family:var(--serif);font-weight:700;color:var(--ink)}
 .colophon p{margin:.5rem 0 0}
+.colophon .colophon-tool,.colophon .colophon-model{color:var(--accent);font-weight:600}
 
 /* 代码 / 表格 */
 code{font-family:var(--mono);font-size:.875em;color:var(--ink);background:var(--panel);padding:.1em .35em}

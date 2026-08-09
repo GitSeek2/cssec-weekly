@@ -82,17 +82,17 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 | 期数与日期（H1） | 首个 `#`，正则拆 刊名/期号/区间 | `<header class="masthead">`：`h1.publication-name` + `p.issue-meta` |
 | 刊号 | H1 后首段 `^刊号[：:]` | 提升进 `<header class="masthead">`：`p.publication-no`（mono 小字，报头刊号行，不留在导读框） |
 | 本期导读 | H1 与首个 H2 间的段落 | `<section class="lede">` 面板框（左绿边） |
-| 发刊电头 | `^发刊[：:] YYYY-MM-DD` | `p.dateline`（mono 右对齐，绿 `——` 标记，放导读框末） |
+| 发刊电头 | `^发刊[：:] YYYY-MM-DD` | `p.dateline`（mono 右对齐，绿连续破折线标记，放导读框末） |
 | 板块 H2 | 任意 `##` | `<section class="section"><h2 class="section-head">`（绿竖条 + 尾随发丝线） |
 | 本期主题（头条） | H2 以 `本期主题` 开头 | `section.headline`：字号加大 + `p.kicker`「头条深度报道」；内部 H3 → `h3.subsection-head`（`§ ` 前缀） |
 | 条目标题（H3） | `###`（板块内） | `<article class="story"><h3 class="story-title">`，衬线 |
 | 引文 | `>` 引用块；末行 `——` | `<blockquote>` + `footer.quote-attribution` |
 | 相关文献 | 剥离行内后等于 `相关文献` 的段 + 后随编号列表；前导 `---` 吞掉 | `<div class="literature">`：`div.literature-head` + `ol.literature-list` |
 | 出处 | `^出处[：:]` | `p.source`（mono 小字，链接保持墨色） |
-| 赛事数据行 | `- 竞赛时间/链接[：:]` 列表项 | `ul.event-meta > li.data-line`（mono，绿 `—` 项目符） |
+| 赛事数据行 | `- 竞赛时间/链接[：:]` 列表项 | `ul.event-meta > li.data-line`（mono，绿 `•` 项目符） |
 | 下期预告 | `^下期预告[：:]` | `div.preview`：`span.label` + 正文 |
 | 反馈入口 | `^反馈与勘误[：:]` | `p.feedback`（右对齐 mono） |
-| AI 撰写说明 | `^\*\*AI 撰写说明\*\*[：:]`（或「末段 + `---` 后」回退）；尾部 `---` 吞掉 | `footer.colophon`（双线报尾） |
+| AI 撰写说明 | `^\*\*AI 撰写说明\*\*[：:]`（或「末段 + `---` 后」回退）；尾部 `---` 吞掉 | `footer.colophon`（双线报尾；Agent 工具名/模型名主题绿突出） |
 
 映射关系的措辞模板（下期预告/反馈/AI 说明）以 `写作风格.md` Part 7 与 `../SKILL.md` 为准——HTML 只是换载体，不换措辞。
 
@@ -108,7 +108,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 | `[文本](链接)` | `<a>` 墨色下划线；**scheme 白名单** http/https/mailto，`javascript:` 等一律降级为纯文本 |
 | 裸 `https://…` | 保守 autolink（去掉尾部收尾符号） |
 | `#`~`####` | 刊头 / 版眉 / 条目标题 / 小标题（见 §6） |
-| 无序/有序列表（2 层嵌套） | `<ul>/<ol>`；全为「竞赛时间/链接」的 ul 变 `event-meta` |
+| 无序/有序列表（2 层嵌套） | `<ul>/<ol>`；无序列表＝主题绿小圆点 `•`（嵌套层空心圈 `◦`），有序列表＝mono 墨色数字；全为「竞赛时间/链接」的 ul 变 `event-meta`（绿点数据行） |
 | `> 引用` | `<blockquote>`（面板底 + 强线左缘） |
 | GFM 表格 | `table`：th 大写 + `.5px` 字距 + 发丝线，**无斑马纹** |
 | `---` | 发丝线分隔（文献前、报尾前的 `---` 自动吞掉，由各自块自带顶线） |
