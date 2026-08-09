@@ -1,6 +1,6 @@
 # CSSEC Weekly
 
-CSSEC 网安周报，基于 Agent Skill 的网安周报。
+CSSEC 网安周报，一个由 Agent Skill 驱动的安全周刊。
 
 ## 结构
 
@@ -9,7 +9,7 @@ CSSEC 网安周报，基于 Agent Skill 的网安周报。
 
 ## 存档
 
-每期成品（`CSSEC 周报 · 第 N 期.md` + 自包含 HTML `.html` + PDF `.pdf`）归档于自封刊号目录 `issues/CSYY-MMWW-TP/`（仿 CN 刊号：`CS`=CSSEC 前缀 + 年份 + 月周 + 中图分类）+ 中间文档。
+每期成品（`CSSEC 周报 · 第 N 期.md` + 自包含 HTML `.html` + PDF `.pdf`）归档于 `issues/CSYY-MMWW-TP/`（`CS`=CSSEC 前缀，`YYMMWW`=发刊年 / 月 / 当月第几周，`TP`=中图分类）+ 中间文档。
 
 ## 致谢
 
