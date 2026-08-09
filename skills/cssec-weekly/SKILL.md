@@ -18,7 +18,7 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 
 每周一发刊，覆盖用户选定的时间范围（默认近 10 天）。读者是大学生技术社团学生——有技术基础、对安全感兴趣，但不都是安全方向。专业概念要用一句类比或括注解释。
 
-成品三格式（`<filename>.md` / `.html` / `.pdf`）共用**人类可读文件名**（`CSSEC 周报 · 第 N 期`，不补零），归档在**序列号目录** `issue-NNN/`（补零 3 位，见「成品命名规范」）：Markdown 是唯一事实源，由 `scripts/md2html.py` 自动转同目录**自包含 HTML**（CSS 全内嵌、零外部资源、离线可看），再由 `scripts/html2pdf.py` 无头浏览器打印为 A4 PDF。版式规格见 `references/HTML设计.md`。结构：
+成品三格式（`<filename>.md` / `.html` / `.pdf`）共用**人类可读文件名**（`CSSEC 周报 · 第 N 期`，不补零），归档在**自封刊号目录** `CSYY-MMWW-TP/`（仿 CN 刊号形态：`CS`=CSSEC 前缀 + 年份 + 月周 + 中图分类，见「成品命名规范」）：Markdown 是唯一事实源，由 `scripts/md2html.py` 自动转同目录**自包含 HTML**（CSS 全内嵌、零外部资源、离线可看），再由 `scripts/html2pdf.py` 无头浏览器打印为 A4 PDF。版式规格见 `references/HTML设计.md`。结构：
 
 ```
 # CSSEC 周报 第 N 期（YYYY-MM-DD ~ YYYY-MM-DD）
@@ -59,7 +59,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode rolling --days <�
 uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 ```
 
-输出 JSON：`issue`（本期期号）、`mode`（窗口来源）、`start`/`end`/`range`（时间窗）、`days`（实际跨度天数）、`dirname`（**归档目录名**：纯英文数字序列号 `issue-007`，补零 3 位）、`filename`（**成品文件名 base**：`CSSEC 周报 · 第 7 期`，不补零，md/html/pdf 共用）。期号逻辑：扫 `issues/` 已有目录（`issue-NNN`）取最大期号 +1，空则第 1 期。
+输出 JSON：`issue`（本期期号）、`mode`（窗口来源）、`start`/`end`/`range`（时间窗）、`days`（实际跨度天数）、`dirname`（**归档目录名**：自封刊号 `CSYY-MMWW-TP`，如 2026 年 8 月第 2 周发刊 → `CS26-0802-TP`）、`filename`（**成品文件名 base**：`CSSEC 周报 · 第 2 期`，不补零，md/html/pdf 共用）。期号逻辑：扫 `issues/` 各目录内**成品文件名**（`CSSEC 周报 · 第 N 期`）取最大期号 +1（兼容历史遗留 `issue-NNN` 目录），空则第 1 期。
 
 **后续步骤统一用 `start`/`end` 透传给各抓取脚本**（`--start <start> --end <end>`），确保所有脚本用同一窗口。撰写时用 `issue` 和 `range` 作标题。交付时先在仓库根建 `issues/<dirname>/sources/`（即 `${CLAUDE_SKILL_DIR}/../../issues/<dirname>/sources/`），成品写入 `issues/<dirname>/<filename>.md`，中间文档写入 `issues/<dirname>/sources/`。
 
@@ -126,7 +126,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 
 > **撰写前必读 `references/写作风格.md`**——先读序章人设和 Part 0 编辑思维三原则（怎么想），再读 Part 1 改稿流程（怎么改），最后查 Part 4 删除清单和 Part 5 格式速查（别怎么写）。三者都是硬约束。头条写作另见 Part 3 五段骨架。
 
-> **风格基准（黄金样本）**：参照 `issues/issue-003/CSSEC 周报 · 第 3 期.md`（成品）与同目录 `STYLE_NOTES.md`（逐条风格标注）。新期撰写前先读这两个文件，模仿其标题节奏、简讯密度、头条纵深、版面零件。注意 `STYLE_NOTES.md` 已标出第 3 期未达新规范处（新闻标题、版面零件、一手素材），新期须向新规范对齐。
+> **风格基准（黄金样本）**：参照 `issues/CSYY-MMWW-TP/CSSEC 周报 · 第 3 期.md`（成品）与同目录 `STYLE_NOTES.md`（逐条风格标注）。新期撰写前先读这两个文件，模仿其标题节奏、简讯密度、头条纵深、版面零件。注意 `STYLE_NOTES.md` 已标出第 3 期未达新规范处（新闻标题、版面零件、一手素材），新期须向新规范对齐。
 
 - **本期主题** → 1 篇深度报道（头条），独立成段、篇幅最长、比板块条目深得多。
 - **其余信息** → 按五大板块分类。**单条目结构**（便于扫读）：
@@ -140,7 +140,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 
 对照下方「质量清单」逐项过。然后落盘（期号、日期区间、目录名都来自步骤 0 的 `issue_meta.py` 输出）：
 
-- **写入** `issues/<dirname>/<filename>.md`（如 `issues/issue-007/CSSEC 周报 · 第 7 期.md`），用 Write 工具。中间文档已在步骤 1、2 写入 `issues/<dirname>/sources/`。
+- **写入** `issues/<dirname>/<filename>.md`（如 `issues/CS26-0802-TP/CSSEC 周报 · 第 2 期.md`），用 Write 工具。中间文档已在步骤 1、2 写入 `issues/<dirname>/sources/`。
 
 ### 步骤 5 — HTML 版生成（发刊时自动执行）
 
@@ -194,17 +194,20 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/html2pdf.py ${CLAUDE_SKILL_DIR}/../../
 
 ### 成品命名规范（序列化）
 
-最终成品三格式（md / html / pdf）共用**人类可读文件名**，归档在**纯英文数字序列号目录**下：
+最终成品三格式（md / html / pdf）共用**人类可读文件名**，归档在**自封刊号目录**下：
 
 ```
-issues/issue-NNN/CSSEC 周报 · 第 N 期.{md,html,pdf}
+issues/CSYY-MMWW-TP/CSSEC 周报 · 第 N 期.{md,html,pdf}
 ```
 
-- **目录 = 机器序列号**：`issue-001` 起，期号补零 3 位（字典序 == 时间序），只含英文与数字，可机读排序。
-- **文件 = 人类可读标题**：`CSSEC 周报 · 第 N 期`，期号**不补零**、不带日期；三格式同 base 不同扩展名。
+- **目录 = 自封刊号**：仿 CN 刊号形态 `CNXX-XXXX/字母`，前缀换成本组织 `CS`（CSSEC）。`CS` + 2 位年（占 CN 省码位）+ 2 位月 + 2 位「当月第几周」+ 中图分类 `TP`（自动化技术·计算机技术）。2026 年 8 月第 1 周 → `CS26-0801-TP`。全大写、纯英文数字与连接号，字典序 == 时间序，可机读排序。
+- **周号 = 周一对齐**：发刊日所在自然周（周一~周日）在当月排第几，每周一发刊时 `01`~`05` 顺排；周一落在上月则该周记发刊月第 1 周（如 2026-01-01 → `CS26-0101-TP`）。
+- **文件 = 人类可读标题**：`CSSEC 周报 · 第 N 期`，期号**不补零**、不带日期；三格式同 base 不同扩展名。期号由 `issue_meta.py` 扫各目录内成品文件名取最大 +1（兼容历史遗留 `issue-NNN` 目录）。
 - **来源**：`issue_meta.py` 输出 `dirname`（目录名）与 `filename`（文件名 base）两个字段，二者不同。
 - **只影响最终成品**：`sources/` 中间文档（信息池/去重/头条候选/头条素材）命名不变。
-- **示例**：第 7 期 → `issues/issue-007/CSSEC 周报 · 第 7 期.md`（另附 `.html` / `.pdf`）。
+- **示例**：2026 年 8 月第 1 周发刊的第 1 期 → `issues/CS26-0801-TP/CSSEC 周报 · 第 1 期.md`（另附 `.html` / `.pdf`）。
+
+> **为什么是 `CS`**：CSSEC 的「自封刊号」——形态、分类、号段全按 CN 规范（年份落在国标里 2X 空号位、序号落在报纸号段 0001~0999 而周报正是报纸节奏），唯独前缀是本组织自己封的。对外人是一串正经的刊号，对懂得人是一处会心一笑的梗。
 
 ### 报刊零件（出版物仪式感）
 
@@ -213,13 +216,14 @@ issues/issue-NNN/CSSEC 周报 · 第 N 期.{md,html,pdf}
 | 零件        | 位置                                                  | 说明                                                  |
 | ----------- | ----------------------------------------------------- | ----------------------------------------------------- |
 | 期数与日期  | H1`# CSSEC 周报 第 N 期（YYYY-MM-DD ~ YYYY-MM-DD）` | 标题自带                                              |
+| 刊号        | H1 下、导读前，单独一行                              | `刊号：<dirname>`（如 `刊号：CS26-0801-TP`），值取 `issue_meta.py` 输出 `dirname` |
 | 本期导读    | H1 下，1~2 句                                         | 具体事实钩子，禁"本周动态频繁"式开门                  |
 | 发刊电头    | 导读末尾，单独一行                                    | `发刊：YYYY-MM-DD`                                  |
 | 下期预告    | 文末（赛事板块之后），1~2 句                          | 基于已知事件的具体预告；无已知事件则省略              |
 | 反馈入口    | 文末最后一行                                          | `反馈与勘误：[提交 issue](url)`，中性陈述不喊话     |
 | AI 撰写说明 | 文末最后（反馈入口之后），以`---` 分隔              | Agent 工具和模型名来自步骤 0 用户确认；模板见下方小节 |
 
-> **HTML 版**：以上零件在 HTML 版中渲染为固定元素（H1→报头、导读→导读框、发刊→电头行、H2→版眉、头条→头条版、相关文献→文献块、下期预告→预告框、反馈→反馈行、AI 撰写说明→尾注），映射与样式见 `references/HTML设计.md` §6。措辞仍以上表与写作风格 Part 7 为准——HTML 只换载体，不改措辞。
+> **HTML 版**：以上零件在 HTML 版中渲染为固定元素（H1→报头、刊号→报头刊号行、导读→导读框、发刊→电头行、H2→版眉、头条→头条版、相关文献→文献块、下期预告→预告框、反馈→反馈行、AI 撰写说明→尾注），映射与样式见 `references/HTML设计.md` §6。措辞仍以上表与写作风格 Part 7 为准——HTML 只换载体，不改措辞。
 
 ### AI 撰写说明（报刊零件）
 

@@ -8,14 +8,14 @@
 做的事：
     1. 解析受控 Markdown 子集（H1-H4 / 段落 / 行内粗体斜体代码链接 /
        有序无序列表 / 引用 / GFM 表格 / 分隔线 / 代码围栏）。
-    2. 识别周报的报刊零件（H1→刊头、导读→导读框、发刊→电头、H2→版眉、
-       本期主题→头条版、H3→条目标题、出处→mono 出处行、竞赛时间/链接→
-       mono 数据行、相关文献→文献块、下期预告→预告框、反馈→反馈行、
-       AI 撰写说明→报尾）。
+    2. 识别周报的报刊零件（H1→刊头、刊号→报头刊号、导读→导读框、发刊→电头、
+       H2→版眉、本期主题→头条版、H3→条目标题、出处→mono 出处行、
+       竞赛时间/链接→mono 数据行、相关文献→文献块、下期预告→预告框、
+       反馈→反馈行、AI 撰写说明→报尾）。
     3. 渲染为单个自包含 HTML 文件（CSS 全内嵌，无外部字体/CSS/JS，自带 print 样式）。
 
 用法:
-    uv run python scripts/md2html.py ../../issues/issue-007/CSSEC 周报 · 第 7 期.md
+    uv run python scripts/md2html.py ../../issues/CS26-0801-TP/CSSEC 周报 · 第 1 期.md
     uv run python scripts/md2html.py 报告.md -o 报告.html --title "CSSEC 周报"
 
 输出:
@@ -254,6 +254,7 @@ _MASTHEAD_ISSUE = re.compile(r"第\s*([0-9０-９]+)\s*期")
 _MASTHEAD_RANGE = re.compile(
     r"[（(]\s*(\d{4}-\d{1,2}-\d{1,2}\s*[~～]\s*\d{4}-\d{1,2}-\d{1,2})\s*[）)]")
 _DATELINE = re.compile(r"^发刊[：:]\s*\d{4}-\d{1,2}-\d{1,2}")
+_PUB_NO = re.compile(r"^刊号[：:]")
 _SOURCE = re.compile(r"^出处[：:]")
 _PREVIEW = re.compile(r"^下期预告[：:]")
 _FEEDBACK = re.compile(r"^反馈与勘误[：:]")
@@ -281,6 +282,8 @@ def classify_paragraph(text):
     literature-head / plain。"""
     if _DATELINE.match(text):
         return "dateline"
+    if _PUB_NO.match(text):
+        return "publication-no"
     if _SOURCE.match(text):
         return "source"
     if _PREVIEW.match(text):
@@ -368,7 +371,8 @@ def _process_footer(blocks):
 def build_tree(blocks):
     """扁平块 → 语义文档树（masthead / lede / sections / footer）。"""
     blocks = list(blocks)
-    doc = {"masthead": None, "lede": [], "sections": [], "footer": []}
+    doc = {"masthead": None, "publication_no": None,
+           "lede": [], "sections": [], "footer": []}
 
     for i, b in enumerate(blocks):
         if b["type"] == "h1":
@@ -381,6 +385,15 @@ def build_tree(blocks):
         doc["lede"].append(blocks[j])
         j += 1
     blocks = blocks[j:]
+
+    # 刊号：H1 后的 `刊号：` 行，从导读区提取进报头（不在导读框重复渲染）。
+    lede = []
+    for b in doc["lede"]:
+        if b["type"] == "p" and _block_role(b) == "publication-no":
+            doc["publication_no"] = _after_label(b["text"]).strip()
+        else:
+            lede.append(b)
+    doc["lede"] = lede
 
     i = 0
     while i < len(blocks):
@@ -557,6 +570,8 @@ a{color:inherit;text-decoration:underline;text-underline-offset:2px}  /* 暗色�
   letter-spacing:.14em;color:var(--ink);line-height:1.15;margin:0}
 .masthead .issue-meta{font-family:var(--mono);font-size:.8125rem;letter-spacing:.25em;
   color:var(--ink-faint);margin:.9rem 0 0}
+.masthead .publication-no{font-family:var(--mono);font-size:.6875rem;letter-spacing:.3em;
+  color:var(--ink-faint);margin:.5rem 0 0}
 
 /* 导读框：面板 + 左侧绿边；电头右对齐 mono */
 .lede{background:var(--panel);border:1px solid var(--hairline);border-left:3px solid var(--accent);
@@ -673,6 +688,9 @@ def render_html(doc, title):
     if meta_parts:
         out.append('<p class="issue-meta">{}</p>'.format(
             html.escape(" · ".join(meta_parts))))
+    if doc["publication_no"]:
+        out.append('<p class="publication-no">刊号 {}</p>'.format(
+            html.escape(doc["publication_no"])))
     out.append("</header>")
 
     # 导读

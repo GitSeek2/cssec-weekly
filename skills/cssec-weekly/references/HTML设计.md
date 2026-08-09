@@ -6,7 +6,7 @@
 
 ## 1. 定位
 
-- **是什么**：把每期成品 `<filename>.md` 渲染为同目录的自包含 HTML 版 `<filename>.html`——单文件、CSS 全内嵌、零外部资源、离线可看、可打印为 PDF。成品三格式共用人类可读文件名 `CSSEC 周报 · 第 N 期`（不补零），归档在序列号目录 `issue-NNN/`（见 `../SKILL.md`「成品命名规范」）。
+- **是什么**：把每期成品 `<filename>.md` 渲染为同目录的自包含 HTML 版 `<filename>.html`——单文件、CSS 全内嵌、零外部资源、离线可看、可打印为 PDF。成品三格式共用人类可读文件名 `CSSEC 周报 · 第 N 期`（不补零），归档在自封刊号目录 `CSYY-MMWW-TP/`（见 `../SKILL.md`「成品命名规范」）。
 - **单一事实源**：Markdown 仍是唯一事实源；HTML 是它的版式渲染，两版内容必须一致（发刊时按 `CHECKLIST.md` 六节核对）。
 - **读者**：浏览器打开 / 打印 / 分享 PDF 的人。目标调性沿用正文原则——**可读、易读**，但版式语言刻意「报刊 + 极简」：像一份严谨的定期出版物，而非公众号推文。
 
@@ -32,7 +32,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 | 直角（border-radius:0） | `*{border-radius:0}`，全站无圆角 = 严谨信号 |
 | 发丝线分隔取代填充/阴影 | 版眉、条目、表格、分隔线全部 1px 线 |
 | 大写 + letter-spacing 的微标签 | `.kicker`、`.preview .label`、表头 th |
-| mono 数据质感 | 期号/电头/出处/竞赛时间/链接/CVE/表格数字一律 mono |
+| mono 数据质感 | 期号/刊号/电头/出处/竞赛时间/链接/CVE/表格数字一律 mono |
 | 链接保持暗色、不加色变化 | `a{color:inherit; underline}`，绿永远不上链接 |
 | 真正的 print 样式 | `@media print`（见 §9） |
 
@@ -69,7 +69,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 |---|---|
 | 刊名、版眉 H2、条目标题 H3、头条小标题、文献头、报尾 label | `--serif` |
 | 正文段落、列表、导读正文 | `--sans` |
-| 期号/日期、电头、出处、`code`、赛事「竞赛时间/链接」、表格数字、预告/反馈/报尾 | `--mono` |
+| 期号/日期、刊号、电头、出处、`code`、赛事「竞赛时间/链接」、表格数字、预告/反馈/报尾 | `--mono` |
 
 字号基调：正文 `16px / line-height 1.75`（CJK 舒展节奏）；标题 `line-height ~1.2`；微标签 `.8125rem` 大写 + 字距。
 
@@ -80,6 +80,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 | 零件 | 检测规则 | HTML 元素 / class |
 |---|---|---|
 | 期数与日期（H1） | 首个 `#`，正则拆 刊名/期号/区间 | `<header class="masthead">`：`h1.publication-name` + `p.issue-meta` |
+| 刊号 | H1 后首段 `^刊号[：:]` | 提升进 `<header class="masthead">`：`p.publication-no`（mono 小字，报头刊号行，不留在导读框） |
 | 本期导读 | H1 与首个 H2 间的段落 | `<section class="lede">` 面板框（左绿边） |
 | 发刊电头 | `^发刊[：:] YYYY-MM-DD` | `p.dateline`（mono 右对齐，绿 `——` 标记，放导读框末） |
 | 板块 H2 | 任意 `##` | `<section class="section"><h2 class="section-head">`（绿竖条 + 尾随发丝线） |
@@ -141,7 +142,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 ## 10. 设计边界与回退
 
 - **未知 Markdown 块**：转换器对未识别的块做中性通用渲染（普通段落/列表/表格/分隔线），保证**任意** Markdown 报告都能转，只是缺少报刊零件的特殊版式。
-- **报刊零件缺失**：缺导读/电头/预告/反馈时，对应元素不输出，不报错（各期版式可不同）。
+- **报刊零件缺失**：缺刊号/导读/电头/预告/反馈时，对应元素不输出，不报错（各期版式可不同）。
 - **措辞冲突**：HTML 不重写措辞，只换载体。AI 撰写说明的 Agent 工具名与模型名、信息源列表，仍以 `../SKILL.md` 步骤 0 确认 + 本期实际使用为准。
 - **内容对等**：发刊时按 `CHECKLIST.md`「六、HTML 版自查」核对 HTML 与 Markdown 逐项一致。
 

@@ -13,7 +13,7 @@
     3. 校验产物存在且非空。
 
 用法:
-    uv run python scripts/html2pdf.py ../../issues/issue-007/CSSEC 周报 · 第 7 期.html
+    uv run python scripts/html2pdf.py ../../issues/CS26-0801-TP/CSSEC 周报 · 第 1 期.html
     uv run python scripts/html2pdf.py 周报.html -o 周报.pdf
 
 输出:
