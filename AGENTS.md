@@ -33,6 +33,7 @@
 
 - **tag = 期目录刊号**（如 `CS26-0802-TP`），与 `issues/` 目录一一对应，无需映射。
 - **Release 资产用已提交成品**，不在 CI 重建（PDF 与本地一致，CI 无需装浏览器 / 中文字体）。
+- **Release 资产命名**：三份成品以刊号重命名上传（`<刊号>.md` / `.html` / `.pdf`，纯 ASCII，下载名清晰），另附整期 zip `CSSEC-Weekly-<刊号>.zip`（含 `sources/`）。
 - `HISTORY.md` 缺该期条目时发刊 CI 会失败并提示 —— 先跑 `append_history.py` 再打 tag。
 
 ## HISTORY.md 格式

@@ -29,21 +29,24 @@ jobs:
             --dirname "$TAG" --history HISTORY.md > RELEASE_NOTES.md
           echo "ISSUE_N=$ISSUE_N" >> "$GITHUB_ENV"
 
-      # 2) 打包资产：三份成品（CSSEC* 通配，避免误收 sources/ 下的中间稿）+ 整期 zip（含 sources）
+      # 2) 打包资产：三份成品以「刊号」重命名上传（下载文件名一目了然，且规避 GitHub
+      #    对非 ASCII 文件名的简化），另打整期 zip（含 sources/ 中间稿）。
       #    zip 用 Python 标准库 shutil.make_archive，避免依赖 runner 是否预装 zip 命令
       - name: 打包资产
         run: |
           set -euo pipefail
           TAG="${{ github.ref_name }}"
           mkdir -p dist
-          cp "issues/$TAG"/CSSEC*.md "issues/$TAG"/CSSEC*.html "issues/$TAG"/CSSEC*.pdf dist/
+          cp "issues/$TAG"/CSSEC*.md   "dist/$TAG.md"
+          cp "issues/$TAG"/CSSEC*.html "dist/$TAG.html"
+          cp "issues/$TAG"/CSSEC*.pdf  "dist/$TAG.pdf"
           python3 - "$TAG" <<'PY'
           import shutil, sys
           tag = sys.argv[1]
           shutil.make_archive(f"dist/CSSEC-Weekly-{tag}", "zip", root_dir=f"issues/{tag}")
           PY
 
-      # 3) 为已存在的 tag 建 Release 并挂资产（文件名含空格与「·」，由 action 的 glob 处理）
+      # 3) 为已存在的 tag 建 Release 并挂资产（资产均为纯 ASCII 刊号名，由 action 的 glob 处理）
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
