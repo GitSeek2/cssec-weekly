@@ -22,9 +22,8 @@ Agent Skills convention so it loads and runs portably.
 - `CHANGELOG.md` (this file).
 
 ### Removed
-- The three reference docs no longer live at repo root (moved into
-  `references/`; `CHECKLIST.md` intentionally remains at root as the
-  high-frequency self-check card).
+- The four reference docs (`写作风格.md`, `信息源.md`, `设计规格.md`,
+  `CHECKLIST.md`) no longer live at repo root — all moved into `references/`.
 
 ### Migration notes
 - All cross-references between docs were updated for the new layout.
