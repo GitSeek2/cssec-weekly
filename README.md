@@ -4,7 +4,9 @@ CSSEC 周报，由 Agent Skill 驱动，自动抓取国内外安全动态、甄�
 
 ## 看刊
 
-每期成品（Markdown / HTML / PDF 三格式）发布在 [GitHub Releases](https://github.com/GitSeek2/cssec-weekly/releases)，可直接下载；历史成品与中间稿归档于 `issues/`。
+每期成品（Markdown / HTML / PDF 三格式）发布在 [GitHub Releases](https://github.com/GitSeek2/cssec-weekly/releases)，可直接下载；
+
+历史成品与中间稿归档于 `issues/` 目录下。
 
 ## 内容板块
 
