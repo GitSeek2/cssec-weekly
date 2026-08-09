@@ -23,9 +23,9 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ github.ref_name }}"
-          ISSUE_N="$(python3 skills/cssec-weekly/scripts/release_notes.py \
+          ISSUE_N="$(python3 scripts/release_notes.py \
             --dirname "$TAG" --issue-only)"
-          python3 skills/cssec-weekly/scripts/release_notes.py \
+          python3 scripts/release_notes.py \
             --dirname "$TAG" --history HISTORY.md > RELEASE_NOTES.md
           echo "ISSUE_N=$ISSUE_N" >> "$GITHUB_ENV"
 
@@ -40,7 +40,7 @@ jobs:
           python3 - "$TAG" <<'PY'
           import shutil, sys
           tag = sys.argv[1]
-          shutil.make_archive(f"dist/cssec-weekly-{tag}", "zip", root_dir=f"issues/{tag}")
+          shutil.make_archive(f"dist/CSSEC-Weekly-{tag}", "zip", root_dir=f"issues/{tag}")
           PY
 
       # 3) 为已存在的 tag 建 Release 并挂资产（文件名含空格与「·」，由 action 的 glob 处理）

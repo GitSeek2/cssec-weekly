@@ -17,9 +17,8 @@ import os
 import re
 import sys
 
-# 仓库根 = 脚本目录向上四级（<根>/skills/cssec-weekly/scripts/…）。
-_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)))))
+# 仓库根 = 脚本目录向上两级（<根>/scripts/…）。
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ISSUES_DIR = os.path.join(_ROOT, "issues")
 HISTORY = os.path.join(_ROOT, "HISTORY.md")
 

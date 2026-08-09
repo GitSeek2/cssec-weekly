@@ -10,11 +10,9 @@ Release Note Markdown（工作流把它重定向为 Release 的 body）。
     uv run python scripts/release_notes.py --dirname CS26-0801-TP --issue-only  # 只打期号
 
 默认输出（stdout）:
-    # CSSEC 周报 第 1 期
     - 刊号：CS26-0801-TP
     - 发刊：2026-08-09
     - 头条：AI 安全测试失控，三巨头接连越界
-    附：本 Release 含 md / html / pdf 三份成品与 sources/ 中间稿。
 
 失败时向 stderr 报错并退出 1；HISTORY 缺该期条目时提示先跑 append_history.py。
 """
@@ -24,9 +22,8 @@ import os
 import re
 import sys
 
-# 仓库根 = 脚本目录向上四级（<根>/skills/cssec-weekly/scripts/…）。
-_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)))))
+# 仓库根 = 脚本目录向上两级（<根>/scripts/…）。
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ISSUES_DIR = os.path.join(_ROOT, "issues")
 HISTORY = os.path.join(_ROOT, "HISTORY.md")
 
@@ -130,11 +127,10 @@ def main():
         die(f"HISTORY.md 第 {n} 期条目缺少刊号或头条字段，请检查/重跑 append_history.py")
 
     date = e["date"] or "未知"
-    print(f"# CSSEC 周报 第 {n} 期")
+    # Release 标题（CSSEC 周报 第 N 期）由 workflow 生成，Note 里不再重复标题与附言。
     print(f"- 刊号：{e['kanhao']}")
     print(f"- 发刊：{date}")
     print(f"- 头条：{e['headline']}")
-    print("附：本 Release 含 md / html / pdf 三份成品与 sources/ 中间稿。")
 
 
 if __name__ == "__main__":
