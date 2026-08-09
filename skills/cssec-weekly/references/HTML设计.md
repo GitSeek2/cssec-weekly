@@ -6,7 +6,7 @@
 
 ## 1. 定位
 
-- **是什么**：把每期成品 `<filename>.md` 渲染为同目录的自包含 HTML 版 `<filename>.html`——单文件、CSS 全内嵌、零外部资源、离线可看、可打印为 PDF。成品三格式共用人类可读文件名 `CSSEC 周报 · 第 N 期`（不补零），归档在自封刊号目录 `CSYY-MMWW-TP/`（见 `../SKILL.md`「成品命名规范」）。
+- **是什么**：把每期成品 `<filename>.md` 渲染为同目录的单文件 HTML 版 `<filename>.html`——单文件、CSS 全内嵌、离线可看、可打印为 PDF；仅头部加载网络字体（Google Fonts 国内镜像，`display:swap`），断网自动回退系统字栈（见 §5）。成品三格式共用人类可读文件名 `CSSEC 周报 · 第 N 期`（不补零），归档在自封刊号目录 `CSYY-MMWW-TP/`（见 `../SKILL.md`「成品命名规范」）。
 - **单一事实源**：Markdown 仍是唯一事实源；HTML 是它的版式渲染，两版内容必须一致（发刊时按 `CHECKLIST.md` 六节核对）。
 - **读者**：浏览器打开 / 打印 / 分享 PDF 的人。目标调性沿用正文原则——**可读、易读**，但版式语言刻意「报刊 + 极简」：像一份严谨的定期出版物，而非公众号推文。
 
@@ -57,18 +57,26 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 
 ## 5. 字体决策与字栈（混搭）
 
-用户既定：**刊头/版眉衬线（报刊身份）+ 正文无衬线（现代可读）+ 数据 mono（质感）**。中文优先系统字体栈，不加载外部字体（离线/打印/网络受限环境都能看）：
+用户既定：**刊头/版眉衬线（报刊身份）+ 正文中文无衬线、正文西文/数字等宽（技术质感）+ 数据 mono（质感）**。**优先网络字体**（Google Fonts 官方国内镜像 `fonts.googleapis.cn`，国内直连无需代理），**回退系统字栈**（离线/断网/镜像失效时仍可读，不发 FOIT）：
 
 ```
---serif:"Noto Serif SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
---sans:"PingFang SC","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
---mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Courier New",monospace;
+--serif:"Noto Serif SC","Source Han Serif SC","Noto Serif CJK SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
+--sans:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"PingFang SC","Microsoft YaHei","Noto Sans SC","Source Han Sans SC","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+--mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Courier New",monospace;
 ```
+
+网络字体策略（`md2html.py` 常量 `FONT_CSS_URL`，可用 `--font-css` / 环境变量 `CSSEC_FONT_CSS` 覆盖，传空串禁用）：
+
+- **字族**：报刊衬线 **Noto Serif SC（思源宋体）** + 技术 mono **JetBrains Mono**。衬线只在标题/刊头等 `--serif` 元素生效，中文按 Google Fonts 的 `unicode-range` 分片只下载用到的字形子集；正文 `--sans` 把等宽 mono 排在字栈最前——**正文西文/数字因此用 JetBrains Mono（技术质感）**，中文因等宽字体无 CJK 字形自动落到后续雅黑/苹方等系统无衬线（近乎全平台覆盖，不加载中文黑体字重）。标题（`--serif`）、数据行（`--mono`）等其它字栈不受影响。
+- **加载**：`<head>` 放 `<link rel="preconnect">`（stylesheets 域 + `fonts.gstatic.cn`）+ `<link rel="stylesheet" href="…?family=…&display=swap">`。`display:swap` 保证字体未就绪时先以回退栈渲染、就绪后无闪烁替换。
+- **回退**：断网/镜像失效时 `<link>` 静默失败，页面直接落回上述系统字栈（Windows 衬线→宋体、mono→Consolas），仍完整可读。这是「在线更精致、离线不破版」的权衡。
+
+**PDF 版说明**：HTML 经 `html2pdf.py` 无头浏览器打印时，中文报告需要的字形子集较多，打印快照可能早于字体加载完成，导致 **PDF 回退系统字体**（衬线→宋体、mono→Consolas）而非网络字体——这是无头 `--print-to-pdf` 的时机竞态，非版式故障；PDF 仍是标准报刊宋体观感。若要 PDF 也嵌入网络字体，需改用 CDP 驱动打印并等待 `document.fonts.ready`（涉及 websocket，当前 stdlib-only 设计未纳入，列为后续待决）。
 
 | 元素 | 字栈 |
 |---|---|
 | 刊名、版眉 H2、条目标题 H3、头条小标题、文献头、报尾 label | `--serif` |
-| 正文段落、列表、导读正文 | `--sans` |
+| 正文段落、列表、导读正文（西文/数字等宽，中文无衬线） | `--sans` |
 | 期号/日期、刊号、电头、出处、`code`、赛事「竞赛时间/链接」、表格数字、预告/反馈/报尾 | `--mono` |
 
 字号基调：正文 `16px / line-height 1.75`（CJK 舒展节奏）；标题 `line-height ~1.2`；微标签 `.8125rem` 大写 + 字距。
@@ -120,7 +128,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 单页出版物的克制，靠主动放弃功能维持：
 
 - **无侧边栏 / 无目录栏 / 无搜索 / 无主题切换**——不是文档站，是单篇报刊。
-- **无 JS、无外部字体、无 CDN**——单文件自包含，`file://` 打开零请求，打印/离线/邮件转发都成立。
+- **无 JS、无脚本行为**——功能零 JS；唯一外部资源是 `<head>` 的网络字体（Google Fonts 国内镜像 `fonts.googleapis.cn` + `fonts.gstatic.cn`，`display:swap`），断网/镜像失效自动回退系统字栈、静默失败零报错，打印/离线/邮件转发仍成立。
 - **无暗色模式**——报刊是纸，纸是浅色的；深浅切换属于应用，不属于出版物。
 - **无装饰性动效 / 无阴影堆叠 / 无圆角**——直角 + 发丝线即全部「装饰」。
 - **绿色不上链接**——纪律见 §4。

@@ -51,7 +51,7 @@
 ## 六、HTML / PDF 版自查（发刊时，步骤 5、6 生成后核对）
 
 - [ ] `issues/<dirname>/<filename>.html` 已生成，与 `<filename>.md` 同目录、同名（`.md` → `.html`）。
-- [ ] 单文件自包含：CSS 全部内嵌 `<style>`，无外部字体/CSS/JS；浏览器以 `file://` 打开零请求报错。
+- [ ] 单文件 HTML：CSS 全部内嵌 `<style>`；`<head>` 网络字体链接指向 `fonts.googleapis.cn`（Noto Serif SC + JetBrains Mono，`display=swap`），断网/镜像失效自动回退系统字栈；浏览器以 `file://` 打开零报错。
 - [ ] 内容与 `<filename>.md` 逐项一致：刊名/期号/日期区间、报头刊号、本期导读、头条各小节、各板块条目标题与正文、赛事「竞赛时间/链接」、相关文献、下期预告、反馈入口、AI 撰写说明（Agent 工具名与模型名与 `.md` 一致）。
 - [ ] 主题色 `#016737` 生效（版眉绿竖条、头条标记、导读/预告左绿边、赛事项目符可见）。
 - [ ] `issues/<dirname>/<filename>.pdf` 已生成，与 `.html` 同目录、同名（`.html` → `.pdf`）；A4、无浏览器默认页眉页脚、正文完整。

@@ -12,7 +12,9 @@
        H2→版眉、本期主题→头条版、H3→条目标题、出处→mono 出处行、
        竞赛时间/链接→mono 数据行、相关文献→文献块、下期预告→预告框、
        反馈→反馈行、AI 撰写说明→报尾）。
-    3. 渲染为单个自包含 HTML 文件（CSS 全内嵌，无外部字体/CSS/JS，自带 print 样式）。
+    3. 渲染为单个自包含 HTML 文件（CSS 全内嵌、无外部 CSS/JS；仅头部加载
+       Google Fonts 网络字体——官方国内镜像 fonts.googleapis.cn，JetBrains Mono
+       + Noto Serif SC，display:swap，断网/镜像失效自动回退系统字栈；自带 print 样式）。
 
 用法:
     uv run python scripts/md2html.py ../../issues/CS26-0801-TP/CSSEC 周报 · 第 1 期.md
@@ -23,7 +25,9 @@
       「已生成: <绝对路径>」。
     - 失败：stderr 打印错误，exit 1。
 
-零外部依赖（仅标准库），离线、确定性（无时间戳/随机，输出逐字节可复现）。
+零第三方 Python 依赖（仅标准库）、确定性（无时间戳/随机，输出逐字节可复现）；
+HTML 头部加载 Google Fonts 网络字体（官方国内镜像 fonts.googleapis.cn，见常量
+FONT_CSS_URL，可用 --font-css / 环境变量 CSSEC_FONT_CSS 覆盖，传空串禁用）。
 """
 
 import argparse
@@ -31,6 +35,7 @@ import html
 import os
 import re
 import sys
+from urllib.parse import urlparse
 
 # --------------------------------------------------------------------------- #
 # 行内 tokenizer：单条 alternation，构造互不干扰
@@ -46,6 +51,17 @@ _INLINE = re.compile(
 
 _LINK_SCHEMES = ("http:", "https:", "mailto:")
 _STRIP_URL_TAIL = ".,;:!?。，；：！？)]}>」」"   # 裸 URL 尾部收尾符号
+
+# 网络字体 CSS（Google Fonts 官方国内镜像：fonts.googleapis.cn + fonts.gstatic.cn，
+# 国内直连无需代理）。报刊衬线 Noto Serif SC + 技术 mono JetBrains Mono，display:swap
+# 保证字体未就绪时先以系统回退栈渲染、就绪后再换。可用 --font-css 或环境变量
+# CSSEC_FONT_CSS 覆盖（换其他镜像/自托管）；传空字符串禁用网络字体（纯系统字栈）。
+FONT_CSS_URL = (
+    "https://fonts.googleapis.cn/css2"
+    "?family=JetBrains+Mono:wght@400;500;600;700"
+    "&family=Noto+Serif+SC:wght@400;500;600;700"
+    "&display=swap"
+)
 
 
 def _render_link(url, label):
@@ -569,9 +585,14 @@ STYLE = r"""
   --panel-strong:#F0F0EE; /* 面板底（文献块） */
   --accent:#016737;      /* 主题绿：仅做状态与强调，不装饰链接 */
   --accent-soft:#E5F0EA; /* 绿浅底 */
-  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
-  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Courier New",monospace;
+  /* 字栈：--serif（报刊衬线）/ --mono（技术 mono）优先用 <head> 加载的网络字体
+     （Noto Serif SC + JetBrains Mono，fonts.googleapis.cn，display:swap）；
+     断网或镜像失效时自动落到下方系统字栈，离线仍可读。
+     --sans（正文）：西文/数字排在等宽 mono 前（技术质感），中文仍落无衬线——
+     等宽字体无 CJK 字形，中文自动落到后续雅黑/苹方等，西文则保持等宽。 */
+  --serif:"Noto Serif SC","Source Han Serif SC","Noto Serif CJK SC","Songti SC","STSong","SimSun",Georgia,"Times New Roman",serif;
+  --sans:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"PingFang SC","Microsoft YaHei","Noto Sans SC","Source Han Sans SC","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"Courier New",monospace;
 }
 *{box-sizing:border-box;border-radius:0}   /* 直角 = 严谨 */
 html{-webkit-text-size-adjust:100%}
@@ -689,7 +710,7 @@ hr{border:0;border-top:1px solid var(--hairline-strong);margin:2rem 0}
 """
 
 
-def render_html(doc, title):
+def render_html(doc, title, font_css_url=None):
     """文档树 → 完整 HTML 字符串。"""
     out = []
     out.append("<!DOCTYPE html>")
@@ -699,6 +720,13 @@ def render_html(doc, title):
     out.append('<meta name="viewport" content="width=device-width, initial-scale=1">')
     out.append('<meta name="generator" content="cssec-weekly/md2html.py">')
     out.append("<title>{}</title>".format(html.escape(title)))
+    if font_css_url:
+        host = urlparse(font_css_url).netloc
+        out.append('<link rel="preconnect" href="https://{}">'.format(host))
+        if host == "fonts.googleapis.cn":
+            out.append('<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin>')
+        out.append('<link rel="stylesheet" href="{}">'.format(
+            html.escape(font_css_url, quote=True)))
     out.append("<style>{}</style>".format(STYLE))
     out.append("</head>")
     out.append("<body>")
@@ -790,6 +818,9 @@ def main(argv=None):
                     help="输出 HTML 路径（默认：输入同目录同名 .html）")
     ap.add_argument("--title", default=None,
                     help="HTML <title>（默认：H1 刊名）")
+    ap.add_argument("--font-css", default=None,
+                    help="网络字体 CSS URL（默认：Google Fonts 国内镜像，见常量 FONT_CSS_URL；"
+                         "环境变量 CSSEC_FONT_CSS 亦覆盖）。传空字符串 '' 禁用网络字体，用纯系统字栈")
     args = ap.parse_args(argv)
 
     try:
@@ -801,12 +832,14 @@ def main(argv=None):
             title = args.title or doc["masthead"]["name"]
         else:
             title = args.title or os.path.splitext(os.path.basename(args.input))[0]
+        font_css_url = (args.font_css if args.font_css is not None
+                        else os.environ.get("CSSEC_FONT_CSS", FONT_CSS_URL))
         out_path = os.path.abspath(args.output or _default_output(args.input))
         parent = os.path.dirname(out_path)
         if parent:
             os.makedirs(parent, exist_ok=True)
         with open(out_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(render_html(doc, title))
+            f.write(render_html(doc, title, font_css_url))
         print("已生成: {}".format(out_path))
         return 0
     except Exception as e:  # noqa: BLE001 —— 任何失败都落 stderr + exit 1

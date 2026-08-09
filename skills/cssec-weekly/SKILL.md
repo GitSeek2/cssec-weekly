@@ -18,7 +18,7 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 
 每周一发刊，覆盖用户选定的时间范围（默认近 10 天）。读者是大学生技术社团学生——有技术基础、对安全感兴趣，但不都是安全方向。专业概念要用一句类比或括注解释。
 
-成品三格式（`<filename>.md` / `.html` / `.pdf`）共用**人类可读文件名**（`CSSEC 周报 · 第 N 期`，不补零），归档在**自封刊号目录** `CSYY-MMWW-TP/`（仿 CN 刊号形态：`CS`=CSSEC 前缀 + 年份 + 月周 + 中图分类，见「成品命名规范」）：Markdown 是唯一事实源，由 `scripts/md2html.py` 自动转同目录**自包含 HTML**（CSS 全内嵌、零外部资源、离线可看），再由 `scripts/html2pdf.py` 无头浏览器打印为 A4 PDF。版式规格见 `references/HTML设计.md`。结构：
+成品三格式（`<filename>.md` / `.html` / `.pdf`）共用**人类可读文件名**（`CSSEC 周报 · 第 N 期`，不补零），归档在**自封刊号目录** `CSYY-MMWW-TP/`（仿 CN 刊号形态：`CS`=CSSEC 前缀 + 年份 + 月周 + 中图分类，见「成品命名规范」）：Markdown 是唯一事实源，由 `scripts/md2html.py` 自动转同目录**单文件 HTML**（CSS 全内嵌、离线可看；仅头部加载网络字体 Google Fonts 国内镜像，断网自动回退系统字栈），再由 `scripts/html2pdf.py` 无头浏览器打印为 A4 PDF（网络字体在 PDF 打印快照中可能回退系统字体，见 `references/HTML设计.md` §5）。版式规格见 `references/HTML设计.md`。结构：
 
 ```
 # CSSEC 周报 第 N 期（YYYY-MM-DD ~ YYYY-MM-DD）
@@ -150,7 +150,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 uv run python ${CLAUDE_SKILL_DIR}/scripts/md2html.py ${CLAUDE_SKILL_DIR}/../../issues/<dirname>/<filename>.md
 ```
 
-- 产物 `<filename>.html` 为单文件自包含：CSS 全内嵌，无外部字体/CSS/JS，浏览器 `file://` 直接打开，`Ctrl+P` 可打印为 PDF。
+- 产物 `<filename>.html` 为单文件：CSS 全内嵌、无外部 JS；`<head>` 加载网络字体（Google Fonts 国内镜像 `fonts.googleapis.cn`，Noto Serif SC + JetBrains Mono，`display:swap`），断网/镜像失效自动回退系统字栈、静默失败零报错。浏览器 `file://` 直接打开，`Ctrl+P` 可打印为 PDF。
 - 版式借鉴 opencode.ai 文档站的极简/严谨/美观语言（暖白纸面、发丝线、直角、mono 数据），整体仍为报刊版式，主题色 `#016737`；规格与映射规则见 `references/HTML设计.md`。
 - 生成后对照 `references/CHECKLIST.md`「六、HTML / PDF 版自查」核对：与 `<filename>.md` 内容一致、`#016737` 生效、打印预览分页合理。
 - 异常时脚本写 stderr 并退非零，不要忽略报错继续交付。
