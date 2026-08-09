@@ -1,10 +1,10 @@
 ---
 name: cssec-weekly
-description: 撰写《CSSEC 周报》。当用户说"写周报/CSSEC周报/本周安全动态/该发刊了"等时触发。自动抓取网络安全信息源（覆盖时间范围在步骤 0 与用户确认，默认近 10 天），给出候选头条主题供用户选定，再按五大板块产出可读的 Markdown 长文并落盘存档。目标读者是大学生技术社团学生，调性：专业但有趣、可读易读优先于全面深入。文风要求：资深报刊编辑口吻，非公众号科普体（详见 references/写作风格.md）。
+description: 撰写《CSSEC 周报》。当用户说"写周报/CSSEC周报/本周安全动态/该发刊了"等时触发。自动抓取网络安全信息源（覆盖时间范围在步骤 0 与用户确认，默认近 10 天），给出候选头条主题供用户选定，再按五大板块产出可读的 Markdown 长文并落盘存档，同时自动转换出同目录的自包含报刊风格 HTML 版（scripts/md2html.py）。目标读者是大学生技术社团学生，调性：专业但有趣、可读易读优先于全面深入。文风要求：资深报刊编辑口吻，非公众号科普体（详见 references/写作风格.md）。
 license: MIT
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
 metadata:
-  version: 1.0.0
+  version: 1.1.0
   author: CSSEC
 compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源（thn/bc/krebs/darkreading/schneier）需 HTTP 代理 127.0.0.1:7897。
 ---
@@ -18,7 +18,7 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 
 每周一发刊，覆盖用户选定的时间范围（默认近 10 天）。读者是大学生技术社团学生——有技术基础、对安全感兴趣，但不都是安全方向。专业概念要用一句类比或括注解释。
 
-成品是一篇 Markdown 长文，结构：
+成品三格式（`<filename>.md` / `.html` / `.pdf`）共用**人类可读文件名**（`CSSEC 周报 · 第 N 期`，不补零），归档在**序列号目录** `issue-NNN/`（补零 3 位，见「成品命名规范」）：Markdown 是唯一事实源，由 `scripts/md2html.py` 自动转同目录**自包含 HTML**（CSS 全内嵌、零外部资源、离线可看），再由 `scripts/html2pdf.py` 无头浏览器打印为 A4 PDF。版式规格见 `references/HTML设计.md`。结构：
 
 ```
 # CSSEC 周报 第 N 期（YYYY-MM-DD ~ YYYY-MM-DD）
@@ -27,6 +27,8 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 ## 五大板块（按需出现，无料的板块直接省略，绝不硬凑）
   态势感知 / 漏洞情报 / 前沿技术 / 政策法规 / 赛事活动
 ```
+
+> **路径约定**：本技能文件（`SKILL.md` / `references/` / `scripts/`）位于仓库根下的 `skills/cssec-weekly/`，`${CLAUDE_SKILL_DIR}` 即此目录。**仓库根 = `${CLAUDE_SKILL_DIR}/../..`**；成品/存档目录 `issues/` 在仓库根（`${CLAUDE_SKILL_DIR}/../../issues/`）。下文 `issues/<dirname>/<filename>/…` 均指仓库根 issues（`dirname` = 序列号目录，`filename` = 成品文件名 base）。
 
 ---
 
@@ -57,9 +59,9 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode rolling --days <�
 uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 ```
 
-输出 JSON：`issue`（本期期号）、`mode`（窗口来源）、`start`/`end`/`range`（时间窗）、`days`（实际跨度天数）、`filename`（建议成品**目录名**，不含 `.md` 后缀）。期号逻辑：扫 `issues/` 已有目录/文件取最大期号 +1，空则第 1 期。
+输出 JSON：`issue`（本期期号）、`mode`（窗口来源）、`start`/`end`/`range`（时间窗）、`days`（实际跨度天数）、`dirname`（**归档目录名**：纯英文数字序列号 `issue-007`，补零 3 位）、`filename`（**成品文件名 base**：`CSSEC 周报 · 第 7 期`，不补零，md/html/pdf 共用）。期号逻辑：扫 `issues/` 已有目录（`issue-NNN`）取最大期号 +1，空则第 1 期。
 
-**后续步骤统一用 `start`/`end` 透传给各抓取脚本**（`--start <start> --end <end>`），确保所有脚本用同一窗口。撰写时用 `issue` 和 `range` 作标题。交付时先建 `issues/<filename>/sources/`，成品写入 `issues/<filename>/周报.md`，中间文档写入 `issues/<filename>/sources/`。
+**后续步骤统一用 `start`/`end` 透传给各抓取脚本**（`--start <start> --end <end>`），确保所有脚本用同一窗口。撰写时用 `issue` 和 `range` 作标题。交付时先在仓库根建 `issues/<dirname>/sources/`（即 `${CLAUDE_SKILL_DIR}/../../issues/<dirname>/sources/`），成品写入 `issues/<dirname>/<filename>.md`，中间文档写入 `issues/<dirname>/sources/`。
 
 **确认 Agent 工具与大模型**：从系统上下文中提取当前 Agent 工具名称和大模型名称，用 AskUserQuestion 一次性让用户确认两项：
 
@@ -75,19 +77,19 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 >
 > **跨源去重（关键）**：境外源与安全内参常报道同一事件（同一 CVE/同一攻击多源都会报）。**英文源与安全内参同事件的合并为一条，优先保留英文一手链接作为出处**——这是降低单源依赖、贴近真实媒体的核心做法（详见取舍规则 5、9）。
 
-| 脚本                                                               | 抓什么                                       |
-| ------------------------------------------------------------------ | -------------------------------------------- |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_secrss.py --start <start> --end <end>`                       | 安全内参（**主内容来源**） |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_secrss.py --author 公安部网安局 --start <start> --end <end>` | 公安部网安局口径（监管/通报）                |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_ctftime_cn.py --start <start> --end <end>`                   | 国内 CTF/网安赛事                            |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_ctftime_global.py --start <start> --end <end>`               | 国际赛事                                     |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_cac.py --start <start> --end <end>`                          | 中央网信办                                   |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_miit.py --start <start> --end <end>`                         | 工信部                                       |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_thn.py --start <start> --end <end>`                         | The Hacker News（**国际事件流主力**，英文） |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_bleepingcomputer.py --start <start> --end <end>`            | BleepingComputer（国际深度+一手链接，英文） |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_krebs.py --start <start> --end <end>`                       | Krebs on Security（独家深度调查，英文）     |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_darkreading.py --start <start> --end <end>`                 | Dark Reading（企业安全视角，英文）          |
-| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_schneier.py --start <start> --end <end>`                    | Schneier on Security（观点/趋势，英文）     |
+| 脚本                                                                                                            | 抓什么                                            |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_secrss.py --start <start> --end <end>`                       | 安全内参（**主内容来源**）                  |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_secrss.py --author 公安部网安局 --start <start> --end <end>` | 公安部网安局口径（监管/通报）                     |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_ctftime_cn.py --start <start> --end <end>`                   | 国内 CTF/网安赛事                                 |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_ctftime_global.py --start <start> --end <end>`               | 国际赛事                                          |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_cac.py --start <start> --end <end>`                          | 中央网信办                                        |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_miit.py --start <start> --end <end>`                         | 工信部                                            |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_thn.py --start <start> --end <end>`                          | The Hacker News（**国际事件流主力**，英文） |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_bleepingcomputer.py --start <start> --end <end>`             | BleepingComputer（国际深度+一手链接，英文）       |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_krebs.py --start <start> --end <end>`                        | Krebs on Security（独家深度调查，英文）           |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_darkreading.py --start <start> --end <end>`                  | Dark Reading（企业安全视角，英文）                |
+| `uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_schneier.py --start <start> --end <end>`                     | Schneier on Security（观点/趋势，英文）           |
 
 每条 item 字段：`source / section_guess / title / url / date / summary / extra`。`section_guess` 只是初判，你可调整。
 
@@ -98,15 +100,16 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 **汇总**：把所有 items 合并成一个「本周信息池」。按语义去重——同一事件在多源出现的，合并为一条。
 
 **落盘**：把信息池和去重记录写入中间文档，便于追溯（需求：记录采纳的信息链接和简要总结）：
-- `issues/<filename>/sources/信息池.md`：完整信息池表格（板块/标题/来源/日期/URL/摘要/是否采纳），**含未采纳项**，未采纳括注理由（信息密度低/企业自宣/超出时间窗/与已采纳重复）。
-- `issues/<filename>/sources/去重合并.md`：同一事件多源合并的记录表（合并后条目/合并的原始条目/合并理由）。
+
+- `issues/<dirname>/sources/信息池.md`：完整信息池表格（板块/标题/来源/日期/URL/摘要/是否采纳），**含未采纳项**，未采纳括注理由（信息密度低/企业自宣/超出时间窗/与已采纳重复）。
+- `issues/<dirname>/sources/去重合并.md`：同一事件多源合并的记录表（合并后条目/合并的原始条目/合并理由）。
 
 ### 步骤 2 — 确定本期头条（Headline）
 
 从信息池提炼 **2~4 个候选主题**，每个给：①事件概述 ②为什么重要 ③建议报道角度。
 用 **AskUserQuestion** 让用户选 1 个做头条。选题标准：重要性高、信息量足、有延展讲解空间、与读者群体相关。
 
-**落盘**：把候选列表和用户最终选择写入 `issues/<filename>/sources/头条候选.md`（每个候选的概述/重要性/角度，加上用户选定项、选择方式、时间）。
+**落盘**：把候选列表和用户最终选择写入 `issues/<dirname>/sources/头条候选.md`（每个候选的概述/重要性/角度，加上用户选定项、选择方式、时间）。
 
 ### 步骤 2.5 — 头条一手素材补强（仅头条，板块简讯跳过）
 
@@ -116,14 +119,14 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 
 - **优先级**：① 厂商官方博客 / 安全公告（OpenAI / Hugging Face / Microsoft 等的官方 post）② 监管 / 法律原文（SEC 8-K、欧盟处罚决定书）③ 外媒原文深度报道（BleepingComputer / Krebs / Ars Technica）④ 论文 / 技术分析（arXiv、Project Zero）。
 - **检索方式**：用「事件名 + vendor blog / official statement / original research」等查询；境外站点需走代理（同步骤 1）。境外 RSS 源（thn/bc/krebs/darkreading/schneier）里若有同主题条目，直接用其一手链接。
-- **单独成档**：把一手链接 + 关键事实摘录写入 `issues/<filename>/sources/头条素材.md`（**不进信息池**——信息池是"本周发生了什么"的候选事件集，一手素材是"某个头条的纵深材料"，用途不同，混入会污染板块选材）。
+- **单独成档**：把一手链接 + 关键事实摘录写入 `issues/<dirname>/sources/头条素材.md`（**不进信息池**——信息池是"本周发生了什么"的候选事件集，一手素材是"某个头条的纵深材料"，用途不同，混入会污染板块选材）。
 - **出处**：成品「相关文献」小节把一手链接列为出处，标注 `· HF Blog` / `· OpenAI` / `· Krebs` 等，与 `· 安全内参` 并列。
 
 ### 步骤 3 — 撰写
 
 > **撰写前必读 `references/写作风格.md`**——先读序章人设和 Part 0 编辑思维三原则（怎么想），再读 Part 1 改稿流程（怎么改），最后查 Part 4 删除清单和 Part 5 格式速查（别怎么写）。三者都是硬约束。头条写作另见 Part 3 五段骨架。
 
-> **风格基准（黄金样本）**：参照 `issues/第3期_2026-07-29/周报.md`（成品）与同目录 `STYLE_NOTES.md`（逐条风格标注）。新期撰写前先读这两个文件，模仿其标题节奏、简讯密度、头条纵深、版面零件。注意 `STYLE_NOTES.md` 已标出第 3 期未达新规范处（新闻标题、版面零件、一手素材），新期须向新规范对齐。
+> **风格基准（黄金样本）**：参照 `issues/issue-003/CSSEC 周报 · 第 3 期.md`（成品）与同目录 `STYLE_NOTES.md`（逐条风格标注）。新期撰写前先读这两个文件，模仿其标题节奏、简讯密度、头条纵深、版面零件。注意 `STYLE_NOTES.md` 已标出第 3 期未达新规范处（新闻标题、版面零件、一手素材），新期须向新规范对齐。
 
 - **本期主题** → 1 篇深度报道（头条），独立成段、篇幅最长、比板块条目深得多。
 - **其余信息** → 按五大板块分类。**单条目结构**（便于扫读）：
@@ -137,7 +140,33 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 
 对照下方「质量清单」逐项过。然后落盘（期号、日期区间、目录名都来自步骤 0 的 `issue_meta.py` 输出）：
 
-- **写入** `issues/<filename>/周报.md`（如 `issues/第7期_2026-07-29/周报.md`），用 Write 工具。中间文档已在步骤 1、2 写入 `issues/<filename>/sources/`。
+- **写入** `issues/<dirname>/<filename>.md`（如 `issues/issue-007/CSSEC 周报 · 第 7 期.md`），用 Write 工具。中间文档已在步骤 1、2 写入 `issues/<dirname>/sources/`。
+
+### 步骤 5 — HTML 版生成（发刊时自动执行）
+
+写入 `<filename>.md` 后，运行转换脚本（离线、确定性、零外部依赖，输出同目录 `<filename>.html`）：
+
+```
+uv run python ${CLAUDE_SKILL_DIR}/scripts/md2html.py ${CLAUDE_SKILL_DIR}/../../issues/<dirname>/<filename>.md
+```
+
+- 产物 `<filename>.html` 为单文件自包含：CSS 全内嵌，无外部字体/CSS/JS，浏览器 `file://` 直接打开，`Ctrl+P` 可打印为 PDF。
+- 版式借鉴 opencode.ai 文档站的极简/严谨/美观语言（暖白纸面、发丝线、直角、mono 数据），整体仍为报刊版式，主题色 `#016737`；规格与映射规则见 `references/HTML设计.md`。
+- 生成后对照 `references/CHECKLIST.md`「六、HTML / PDF 版自查」核对：与 `<filename>.md` 内容一致、`#016737` 生效、打印预览分页合理。
+- 异常时脚本写 stderr 并退非零，不要忽略报错继续交付。
+
+### 步骤 6 — PDF 版生成（发刊时自动执行）
+
+生成 `<filename>.html` 后，用无头浏览器打印为 PDF（复用 HTML 内嵌的 `@media print` 与 `@page` 样式，A4）：
+
+```
+uv run python ${CLAUDE_SKILL_DIR}/scripts/html2pdf.py ${CLAUDE_SKILL_DIR}/../../issues/<dirname>/<filename>.html
+```
+
+- 产物 `<filename>.pdf` 与 HTML 同目录。脚本自动探测本机无头浏览器（Win11 自带 Edge，其次 Chrome）；可用 `CSSEC_PDF_BROWSER` 环境变量或 `--browser` 显式指定。
+- 已加 `--no-pdf-header-footer` 去除默认页眉页脚；页边距/字号/分页由 HTML 的 print 样式控制（`@page{size:A4;margin:18mm 16mm}`）。
+- 生成后对照 `references/CHECKLIST.md`「六、HTML / PDF 版自查」核对分页。
+- 异常时脚本写 stderr 并退非零，不要忽略报错继续交付。
 
 ---
 
@@ -163,27 +192,45 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 - **CVE 等编号**：用行内代码格式 `` `CVE-2026-xxxx` `` 便于检索。
 - **配图**：以中性可移植 Markdown 为主；赛事条目可引用 `extra.logo`（比赛标志 URL）。
 
+### 成品命名规范（序列化）
+
+最终成品三格式（md / html / pdf）共用**人类可读文件名**，归档在**纯英文数字序列号目录**下：
+
+```
+issues/issue-NNN/CSSEC 周报 · 第 N 期.{md,html,pdf}
+```
+
+- **目录 = 机器序列号**：`issue-001` 起，期号补零 3 位（字典序 == 时间序），只含英文与数字，可机读排序。
+- **文件 = 人类可读标题**：`CSSEC 周报 · 第 N 期`，期号**不补零**、不带日期；三格式同 base 不同扩展名。
+- **来源**：`issue_meta.py` 输出 `dirname`（目录名）与 `filename`（文件名 base）两个字段，二者不同。
+- **只影响最终成品**：`sources/` 中间文档（信息池/去重/头条候选/头条素材）命名不变。
+- **示例**：第 7 期 → `issues/issue-007/CSSEC 周报 · 第 7 期.md`（另附 `.html` / `.pdf`）。
+
 ### 报刊零件（出版物仪式感）
 
 除板块内容外，每期成品必须包含以下固定零件（措辞规范见 `references/写作风格.md` Part 7）：
 
-| 零件 | 位置 | 说明 |
-|---|---|---|
-| 期数与日期 | H1 `# CSSEC 周报 第 N 期（YYYY-MM-DD ~ YYYY-MM-DD）` | 标题自带 |
-| 本期导读 | H1 下，1~2 句 | 具体事实钩子，禁"本周动态频繁"式开门 |
-| 发刊电头 | 导读末尾，单独一行 | `发刊：YYYY-MM-DD` |
-| 下期预告 | 文末（赛事板块之后），1~2 句 | 基于已知事件的具体预告；无已知事件则省略 |
-| 反馈入口 | 文末最后一行 | `反馈与勘误：[提交 issue](url)`，中性陈述不喊话 |
-| AI 撰写说明 | 文末最后（反馈入口之后），以 `---` 分隔 | Agent 工具和模型名来自步骤 0 用户确认；模板见下方小节 |
+| 零件        | 位置                                                  | 说明                                                  |
+| ----------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| 期数与日期  | H1`# CSSEC 周报 第 N 期（YYYY-MM-DD ~ YYYY-MM-DD）` | 标题自带                                              |
+| 本期导读    | H1 下，1~2 句                                         | 具体事实钩子，禁"本周动态频繁"式开门                  |
+| 发刊电头    | 导读末尾，单独一行                                    | `发刊：YYYY-MM-DD`                                  |
+| 下期预告    | 文末（赛事板块之后），1~2 句                          | 基于已知事件的具体预告；无已知事件则省略              |
+| 反馈入口    | 文末最后一行                                          | `反馈与勘误：[提交 issue](url)`，中性陈述不喊话     |
+| AI 撰写说明 | 文末最后（反馈入口之后），以`---` 分隔              | Agent 工具和模型名来自步骤 0 用户确认；模板见下方小节 |
+
+> **HTML 版**：以上零件在 HTML 版中渲染为固定元素（H1→报头、导读→导读框、发刊→电头行、H2→版眉、头条→头条版、相关文献→文献块、下期预告→预告框、反馈→反馈行、AI 撰写说明→尾注），映射与样式见 `references/HTML设计.md` §6。措辞仍以上表与写作风格 Part 7 为准——HTML 只换载体，不改措辞。
 
 ### AI 撰写说明（报刊零件）
 
 每期成品末尾（反馈入口之后、全文最后）必须以分隔线 `---` 引出 AI 撰写说明。**Agent 工具名和模型名均使用步骤 0 用户确认的名称**。措辞模板：
 
 ---
+
 **AI 撰写说明**：本文由 [步骤 0 确认的 Agent 工具名] 调用 [步骤 0 确认的模型名] 基于安全内参、BleepingComputer、The Hacker News、Krebs on Security、Dark Reading、Schneier on Security、中央网信办、工信部、Hello-CTFtime 等公开权威信息源整理撰写。内容经人工审核，力求准确可靠。
 
 **约束**：
+
 - Agent 工具名和模型名严格使用步骤 0 用户确认的名称，不得自行更改或编造。
 - 信息源列表以**本期实际使用的源**为准（未使用的源不列）。
 - 文案保持此模板的中性陈述语气，不加「敬请谅解」「欢迎指正」等客套话。
@@ -237,3 +284,4 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 - `references/CHECKLIST.md`——交付前逐项核对的速查卡（结构 + 配额 + 删除清单三组合并去重版）。
 - `references/信息源.md`——全部信息源（含境外英文源）地址、字段与取用规则（需要时再读）。
 - `references/设计规格.md`——设计意图存档（项目定位 + 取用规则理由，需要时再读）。
+- `references/HTML设计.md`——HTML 版式设计规格（借鉴 opencode.ai 的配色/排版，主题色 #016737；步骤 5 生成 HTML 时按需再读）。

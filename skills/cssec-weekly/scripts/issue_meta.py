@@ -1,9 +1,9 @@
 """推算本期周报的期数与时间范围。
 
 逻辑（对应设计规格 §8 待决项「期数/日期计算」）：
-    - 期数：扫描 issues/ 目录下已有的 `第N期_YYYY-MM-DD`（目录形态，含 周报.md + sources/），
+    - 期数：扫描 issues/ 目录下已有的 `issue-NNN`（目录形态，含 成品 + sources/），
       取最大 N，下一期 = N+1；目录为空或不存在则从第 1 期起。
-      正则用 search，同时兼容历史扁平文件 `第N期_YYYY-MM-DD.md`，向后兼容。
+      正则用 search，同时兼容历史遗留 `第N期_YYYY-MM-DD`，向后兼容。
     - 时间范围：发刊日为今天，内容覆盖近 `--days` 天（默认 10）。区间 = [今天-days, 今天]。
 
 用法:
@@ -19,7 +19,8 @@
       "start": "2026-07-19",            # 区间起点（含）
       "end": "2026-07-29",              # 区间终点（含）
       "range": "2026-07-19 ~ 2026-07-29",
-      "filename": "第7期_2026-07-29",    # 建议的成品目录名（成品写入该目录下 周报.md）
+      "dirname": "issue-007",           # 归档目录名（纯英文数字序列号，补零 3 位）
+      "filename": "CSSEC 周报 · 第 7 期", # 成品文件名 base（不补零；md/html/pdf 共用）
       "existing_max": 6,                # 已存在的最大期号（无则 0）
       "errors": []
     }
@@ -35,11 +36,17 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib  # noqa: E402
 
-# 与 fetch_*.py 同级的 issues 目录（脚本位于 scripts/，issues 在上一级）
-ISSUES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "issues")
-# 匹配 第N期_YYYY-MM-DD（N 为数字；允许全角/半角数字与期号两侧空格）。
-# 用 search，对目录名 `第N期_YYYY-MM-DD` 与历史扁平文件 `第N期_YYYY-MM-DD.md` 都能匹配期号组。
-_NAME = re.compile(r"第\s*([0-9]+)\s*期[_\s]*(?:(\d{4}-\d{1,2}-\d{1,2}))?", re.UNICODE)
+# issues 存档在仓库根目录（非技能目录内）：脚本位于
+# <根>/skills/cssec-weekly/scripts/，向上四级才是仓库根。
+ISSUES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))))),
+    "issues")
+# 匹配归档目录序列号 `issue-001` / `issue001` / `issue_001`（group1），
+# 并兼容历史遗留 `第N期_YYYY-MM-DD`（group2）。用 search 即可。
+_NAME = re.compile(
+    r"(?:issue[-_ ]*([0-9]+))|第\s*([0-9]+)\s*期",
+    re.UNICODE | re.IGNORECASE)
 
 
 def existing_issues(issues_dir=ISSUES_DIR):
@@ -51,7 +58,7 @@ def existing_issues(issues_dir=ISSUES_DIR):
         m = _NAME.search(name)
         if m:
             try:
-                out.append(int(m.group(1)))
+                out.append(int(m.group(1) or m.group(2)))
             except ValueError:
                 pass
     return sorted(out)
@@ -90,7 +97,11 @@ def compute(today=None, days=10, mode="rolling", issues_dir=ISSUES_DIR,
         "start": start.isoformat(),
         "end": end.isoformat(),
         "range": f"{start.isoformat()} ~ {end.isoformat()}",
-        "filename": f"第{issue}期_{today.isoformat()}",
+        # 命名分工：目录 = 机器序列号（issue-NNN，补零 3 位可排序）；
+        # 文件 = 人类可读标题（CSSEC 周报 · 第 N 期，不补零，md/html/pdf 共用）。
+        # 详见 SKILL.md「成品命名规范」。
+        "dirname": f"issue-{issue:03d}",
+        "filename": f"CSSEC 周报 · 第 {issue} 期",
         "existing_max": existing_max,
         "errors": [],
     }
