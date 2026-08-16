@@ -4,7 +4,7 @@ description: 撰写《CSSEC 周报》。当用户说"写周报/CSSEC周报/本�
 license: MIT
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
 metadata:
-  version: 1.1.0
+  version: 1.3.0
   author: CSSEC
 compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源（thn/bc/krebs/darkreading/schneier）需 HTTP 代理 127.0.0.1:7897。
 ---
@@ -12,7 +12,7 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 
 > 一句话原则：**内容不在多也不在精，而在于可读、易读、有用。** 当「全面/深入」与「可读/易读」冲突时，永远优先后者。
 
-> 文风：先进入 `references/写作风格.md` 序章「写作者人设」和 Part 0「编辑思维三原则」再动笔——它教你怎么像一个编辑那样思考和改稿，既给正向写法（简讯写作法、头条写作法），也给按思维模式分类的删除清单和格式配额。**撰写前必读 Part 0+1**，交付前必须走完 Part 1 的四步改稿流程，逐项核对 Part 4 删除清单和 Part 5 配额。
+> 文风：先进入 `references/写作风格.md` 序章「写作者人设」和 Part 0「编辑思维三原则」再动笔——它教你怎么像一个编辑那样思考和改稿，既给正向写法（简讯写作法、头条写作法），也给按思维模式分类的删除清单和格式配额。**撰写前必读 Part 0+1**，交付前必须走完 Part 1 的四步改稿流程（作者自改）与步骤 3.5 的编辑终审（`references/审稿.md`，写完后换身份独立重读），逐项核对 Part 4 删除清单和 Part 5 配额。
 
 ## 你在做什么
 
@@ -124,23 +124,35 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek
 
 ### 步骤 3 — 撰写
 
-> **撰写前必读 `references/写作风格.md`**——先读序章人设和 Part 0 编辑思维三原则（怎么想），再读 Part 1 改稿流程（怎么改），最后查 Part 4 删除清单和 Part 5 格式速查（别怎么写）。三者都是硬约束。头条写作另见 Part 3 五段骨架。
+> **撰写前必读 `references/写作风格.md`**——先读序章人设和 Part 0 编辑思维三原则（怎么想），再读 Part 1 改稿流程（怎么改），最后查 Part 4 删除清单和 Part 5 格式速查（别怎么写）。三者都是硬约束。头条写作另见 Part 3：先按**链式总纲**定链（一句话链 + 段间接口），再按五段骨架写。
 
-> **风格基准（黄金样本）**：参照 `issues/CSYY-MMWW-TP/CSSEC 周报 · 第 3 期.md`（成品）与同目录 `STYLE_NOTES.md`（逐条风格标注）。新期撰写前先读这两个文件，模仿其标题节奏、简讯密度、头条纵深、版面零件。注意 `STYLE_NOTES.md` 已标出第 3 期未达新规范处（新闻标题、版面零件、一手素材），新期须向新规范对齐。
+> **风格基准（黄金样本）**：参照 `references/黄金样本头条.md`——基于 xz 后门真实事件的全长示例（一句话链 + 全文 + 逐条标注，事实均有出处），撰写头条前先读它，模仿其标题节奏、简讯密度、头条纵深、版面零件；写前另泛读 `references/经典范文.md`（真实报道与技术稿摘录）感受真实刊物节奏。规范以本文件与 `references/写作风格.md` 为准。
 
 - **本期主题** → 1 篇深度报道（头条），独立成段、篇幅最长、比板块条目深得多。
 - **其余信息** → 按五大板块分类。**单条目结构**（便于扫读）：
   1. **标题**（H3）：一句话点明事件，含关键名词（厂商/CVE/赛事名）。
   2. **一句话摘要**：发生了什么 + 影响谁。
-  3. **正文（2~4 句）**：背景 + 关键细节 + 必要时 1 句具体影响点评（点评密度见 `references/写作风格.md` 第 5 章）。
+  3. **正文（2~4 句）**：背景 + 关键细节 + 必要时 1 句具体影响点评（点评密度见 `references/写作风格.md` Part 5）。
   4. **出处链接**：行内 Markdown 链接附在条目末尾。
 - **无料的板块直接省略**，不要硬凑。
 
-### 步骤 4 — 自查与交付
+### 步骤 3.5 — 审稿与润色（编辑终审）
 
-对照下方「质量清单」逐项过。然后落盘（期号、日期区间、目录名都来自步骤 0 的 `issue_meta.py` 输出）：
+初稿写完不算完。先读 `references/审稿.md`，然后**换身份**：放下作者立场，以「第一次拿到这份稿的资深编辑兼目标读者」身份，对全文做一遍独立终审：
 
-- **写入** `issues/<dirname>/<filename>.md`（如 `issues/CS26-0802-TP/CSSEC 周报 · 第 2 期.md`），用 Write 工具。中间文档已在步骤 1、2 写入 `issues/<dirname>/sources/`。
+- **头条**：走完审稿.md 五步——通读标记 → 逻辑链审查（段级）→ 连贯性审查（句级）→ 可读性审查 → 润色落笔。专治行文松散、段与段无推进、句与句衔接生硬。
+- **板块简讯**：用句级标准速检（标题动词+影响、导语倒金字塔、指代与衔接、术语括注），只修明显问题。
+- **硬规则**：只改行文，不动事实——数字、引语、出处、相关文献一律不改，存疑回 `sources/头条素材.md` / `sources/信息池.md` 核实。
+- **落盘**：把修改写入 `issues/<dirname>/sources/审稿记录.md`（位置 | 问题 | 改法 | 理由，末尾附「未改动事实」声明）。
+- **润色后重数**：对照 `references/写作风格.md` Part 4 删除清单与 Part 5 配额重新核对一遍（改写会重新引入违禁项）。
+
+审稿完成的文本即**定稿**，步骤 4 直接落盘，不再改动行文。
+
+### 步骤 4 — 自查与交付（写入定稿）
+
+步骤 3.5 审稿后的文本即定稿。对照下方「质量清单」逐项过。然后落盘（期号、日期区间、目录名都来自步骤 0 的 `issue_meta.py` 输出）：
+
+- **写入** `issues/<dirname>/<filename>.md`（如 `issues/CS26-0802-TP/CSSEC 周报 · 第 2 期.md`），用 Write 工具。中间文档已在步骤 1、2、3.5 写入 `issues/<dirname>/sources/`。
 
 ### 步骤 5 — HTML 版生成（发刊时自动执行）
 
@@ -152,7 +164,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/md2html.py ${CLAUDE_SKILL_DIR}/../../i
 
 - 产物 `<filename>.html` 为单文件：CSS 全内嵌、无外部 JS；`<head>` 加载网络字体（Google Fonts 国内镜像 `fonts.googleapis.cn`，Noto Serif SC + JetBrains Mono，`display:swap`），断网/镜像失效自动回退系统字栈、静默失败零报错。浏览器 `file://` 直接打开，`Ctrl+P` 可打印为 PDF。
 - 版式借鉴 opencode.ai 文档站的极简/严谨/美观语言（暖白纸面、发丝线、直角、mono 数据），整体仍为报刊版式，主题色 `#016737`；规格与映射规则见 `references/HTML设计.md`。
-- 生成后对照 `references/CHECKLIST.md`「六、HTML / PDF 版自查」核对：与 `<filename>.md` 内容一致、`#016737` 生效、打印预览分页合理。
+- 生成后对照 `references/CHECKLIST.md`「七、HTML / PDF 版自查」核对：与 `<filename>.md` 内容一致、`#016737` 生效、打印预览分页合理。
 - 异常时脚本写 stderr 并退非零，不要忽略报错继续交付。
 
 ### 步骤 6 — PDF 版生成（发刊时自动执行）
@@ -165,7 +177,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/html2pdf.py ${CLAUDE_SKILL_DIR}/../../
 
 - 产物 `<filename>.pdf` 与 HTML 同目录。脚本自动探测本机无头浏览器（Win11 自带 Edge，其次 Chrome）；可用 `CSSEC_PDF_BROWSER` 环境变量或 `--browser` 显式指定。
 - 已加 `--no-pdf-header-footer` 去除默认页眉页脚；页边距/字号/分页由 HTML 的 print 样式控制（`@page{size:A4;margin:18mm 16mm}`）。
-- 生成后对照 `references/CHECKLIST.md`「六、HTML / PDF 版自查」核对分页。
+- 生成后对照 `references/CHECKLIST.md`「七、HTML / PDF 版自查」核对分页。
 - 异常时脚本写 stderr 并退非零，不要忽略报错继续交付。
 
 > 发布 / 发刊（追加 `HISTORY.md` 发刊史、打刊号 tag、GitHub Release）见仓库根 `AGENTS.md` —— SKILL 只负责内容创作。
@@ -282,12 +294,15 @@ issues/CSYY-MMWW-TP/CSSEC 周报 · 第 N 期.{md,html,pdf}
 
 ## 质量清单（交付前自查）
 
-交付前逐项核对 **`references/CHECKLIST.md`**——它是结构 + 配额 + 删除清单三组合并去重的速查卡（含本次新增的「跨源去重」「头条至少 1 条一手素材」「新闻标题抽检」「报刊零件齐全」等条目）。文风自查的具体判据见 `references/写作风格.md` Part 0~5。
+交付前逐项核对 **`references/CHECKLIST.md`**——它是结构 + 配额 + 删除清单 + 审稿终审四组合并去重的速查卡（含「跨源去重」「头条至少 1 条一手素材」「新闻标题抽检」「报刊零件齐全」「编辑终审」等条目）。文风自查的具体判据见 `references/写作风格.md` Part 0~5，终审流程见 `references/审稿.md`。
 
 ## 深度参考
 
-- `references/写作风格.md`——撰写前**必读**，是文风硬约束。序章人设 + Part 0 思维三原则 + Part 1 改稿流程为必读；Part 2~7 为写作与自查参考。
-- `references/CHECKLIST.md`——交付前逐项核对的速查卡（结构 + 配额 + 删除清单三组合并去重版）。
+- `references/写作风格.md`——撰写前**必读**，是文风硬约束。序章人设 + Part 0 思维三原则 + Part 1 改稿流程为必读；Part 2~7 为写作与自查参考（Part 3 含头条链式总纲）。
+- `references/黄金样本头条.md`——基于 xz 后门真实事件的全长头条示例 + 逐条标注（撰写头条前参照，事实有出处，与 Part 6 示例 7 共用素材）。
+- `references/经典范文.md`——真实报道与技术稿短摘录 + 技法标注（写前泛读，感受真实刊物节奏）。
+- `references/审稿.md`——步骤 3.5 编辑终审流程：审稿人设 + 头条五步审读 + 全刊速检 + 审稿记录模板（写完必走）。
+- `references/CHECKLIST.md`——交付前逐项核对的速查卡（结构 + 配额 + 删除清单 + 审稿终审四组合并去重版）。
 - `references/信息源.md`——全部信息源（含境外英文源）地址、字段与取用规则（需要时再读）。
 - `references/设计规格.md`——设计意图存档（项目定位 + 取用规则理由，需要时再读）。
 - `references/HTML设计.md`——HTML 版式设计规格（借鉴 opencode.ai 的配色/排版，主题色 #016737；步骤 5 生成 HTML 时按需再读）。

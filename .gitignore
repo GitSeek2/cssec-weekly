@@ -29,3 +29,6 @@ venv/
 
 # 抓取原始档（可随时重跑脚本再生成，不入库）
 issues/*/sources/raw_*.json
+
+# ZCode 会话残留
+.zcode/
