@@ -26,3 +26,6 @@ Desktop.ini
 .env.local
 .venv/
 venv/
+
+# 抓取原始档（可随时重跑脚本再生成，不入库）
+issues/*/sources/raw_*.json
