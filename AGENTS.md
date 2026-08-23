@@ -4,7 +4,7 @@
 
 ## 仓库结构
 
-- `skills/cssec-weekly/` —— Agent Skill：报刊内容创作（`SKILL.md` + `references/` + `scripts/` 内容脚本：fetch_* / format_events / issue_meta / md2html / html2pdf）
+- `skills/cssec-weekly/` —— Agent Skill：报刊内容创作（`SKILL.md` + `references/` + `scripts/` 内容脚本：fetch_all / fetch_* / format_events / issue_meta / lint / check_facts / md2html / html2pdf）
 - `scripts/` —— 发刊脚本（`release_notes.py` / `append_history.py`）
 - `issues/<刊号>/` —— 每期成品 + `sources/` 中间稿存档（`<刊号>` 形如 `CS26-0801-TP`）
 - `HISTORY.md` —— 发刊史（逐期记录刊号 / 日期 / 头条，Release Note 数据源）
