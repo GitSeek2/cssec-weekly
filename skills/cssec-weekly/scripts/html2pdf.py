@@ -5,9 +5,9 @@
 样式与 `@page{margin:18mm 16mm}`——这也是 HTML 版式里 print 样式存在的意义。
 
 做的事：
-    1. 定位本机无头浏览器：优先 Edge（Windows 11 自带，路径固定），
-       其次 Chrome，再到 PATH；可用 `CSSEC_PDF_BROWSER` 环境变量或 `--browser`
-       显式指定。
+    1. 定位本机无头浏览器：候选路径覆盖 Windows（Edge/Chrome，Win11 自带
+       Edge）、macOS 与 Linux 常见安装位置，再到 PATH；可用 CSSEC_PDF_BROWSER
+       环境变量或 --browser 显式指定。
     2. 用 `--headless --print-to-pdf`（附 `--no-pdf-header-footer`，去掉默认
        页眉页脚）把 HTML 渲染成 PDF。
     3. 校验产物存在且非空。
@@ -33,12 +33,16 @@ import sys
 import tempfile
 from pathlib import Path
 
-# 常见浏览器路径（按优先级；Edge 是 Win11 自带）
+# 常见浏览器路径（按优先级；Edge 是 Win11 自带，后三条覆盖 macOS / Linux）
 _BROWSER_CANDIDATES = [
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
     r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
     r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
 ]
 _BROWSER_NAMES = ("msedge", "edge", "chrome", "google-chrome", "chromium")
 

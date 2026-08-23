@@ -2,18 +2,18 @@
 
 > 本文档是《CSSEC 周报》**HTML 版交付物**的设计规格：说明「Markdown 周报 → 自包含报刊风格 HTML」的版式从哪里来、按什么规则映射、刻意不做什么。
 >
-> **执行以 `../SKILL.md`（流程，见「步骤 5 — HTML 版生成」「步骤 6 — PDF 版生成」）+ `scripts/md2html.py` / `scripts/html2pdf.py`（转换器，样式唯一实现方）+ `CHECKLIST.md`（交付自查「七、HTML / PDF 版自查」）为准。** 本文档不作执行依据；转换器实际输出与本文档冲突时，以脚本为准并回改本文档。
+> **执行以 `../SKILL.md`（流程，见「阶段八 · 出版」）+ `scripts/md2html.py` / `scripts/html2pdf.py`（转换器，样式唯一实现方）+ `CHECKLIST.md`（交付自查「五、HTML / PDF 版自查」）为准。** 本文档不作执行依据；转换器实际输出与本文档冲突时，以脚本为准并回改本文档。
 
 ## 1. 定位
 
-- **是什么**：把每期成品 `<filename>.md` 渲染为同目录的单文件 HTML 版 `<filename>.html`——单文件、CSS 全内嵌、离线可看、可打印为 PDF；仅头部加载网络字体（Google Fonts 国内镜像，`display:swap`），断网自动回退系统字栈（见 §5）。成品三格式共用人类可读文件名 `CSSEC 周报 · 第 N 期`（不补零），归档在自封刊号目录 `CSYY-MMWW-TP/`（见 `../SKILL.md`「成品命名规范」）。
-- **单一事实源**：Markdown 仍是唯一事实源；HTML 是它的版式渲染，两版内容必须一致（发刊时按 `CHECKLIST.md` 七节核对）。
+- **是什么**：把每期成品 `<filename>.md` 渲染为同目录的单文件 HTML 版 `<filename>.html`——单文件、CSS 全内嵌、离线可看、可打印为 PDF；仅头部加载网络字体（Google Fonts 国内镜像，`display:swap`），断网自动回退系统字栈（见 §5）。成品三格式共用人类可读文件名 `CSSEC 周报 · 第 N 期`（不补零），归档在自封刊号目录 `CSYY-MMWW-TP/`（见 `版面与零件.md` §6）。
+- **单一事实源**：Markdown 仍是唯一事实源；HTML 是它的版式渲染，两版内容必须一致（发刊时按 `CHECKLIST.md` 第五节核对）。
 - **读者**：浏览器打开 / 打印 / 分享 PDF 的人。目标调性沿用正文原则——**可读、易读**，但版式语言刻意「报刊 + 极简」：像一份严谨的定期出版物，而非公众号推文。
 
 ## 2. 转换机制
 
 - 转换器：`scripts/md2html.py`（stdlib-only、离线、确定性——无时间戳/随机，同一输入逐字节可复现）。
-- 命令（发刊时自动执行，见 `../SKILL.md` 步骤 5）：
+- 命令（发刊时自动执行，见 `../SKILL.md` 阶段八）：
 
   ```
   uv run python ${CLAUDE_SKILL_DIR}/scripts/md2html.py ${CLAUDE_SKILL_DIR}/../../issues/<dirname>/<filename>.md
@@ -102,7 +102,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 | 反馈入口 | `^反馈与勘误[：:]` | `p.feedback`（右对齐 mono） |
 | AI 撰写说明 | `^\*\*AI 撰写说明\*\*[：:]`（或「末段 + `---` 后」回退）；尾部 `---` 吞掉 | `footer.colophon`（双线报尾；Agent 工具名/模型名主题绿突出） |
 
-映射关系的措辞模板（下期预告/反馈/AI 说明）以 `写作风格.md` Part 7 与 `../SKILL.md` 为准——HTML 只是换载体，不换措辞。
+映射关系的措辞模板不在本文——零件措辞与位置的唯一事实源是 `版面与零件.md`；零件识别正则的唯一事实源是 `scripts/md2html.py`（`scripts/lint.py` 复用同一组正则做零件检查，两处永远一致）。HTML 只换载体，不换措辞。
 
 ## 7. Markdown 子集 → 样式映射表
 
@@ -151,13 +151,13 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 
 - **未知 Markdown 块**：转换器对未识别的块做中性通用渲染（普通段落/列表/表格/分隔线），保证**任意** Markdown 报告都能转，只是缺少报刊零件的特殊版式。
 - **报刊零件缺失**：缺刊号/导读/电头/预告/反馈时，对应元素不输出，不报错（各期版式可不同）。
-- **措辞冲突**：HTML 不重写措辞，只换载体。AI 撰写说明的 Agent 工具名与模型名、信息源列表，仍以 `../SKILL.md` 步骤 0 确认 + 本期实际使用为准。
-- **内容对等**：发刊时按 `CHECKLIST.md`「七、HTML 版自查」核对 HTML 与 Markdown 逐项一致。
+- **措辞冲突**：HTML 不重写措辞，只换载体。AI 撰写说明的 Agent 工具名与模型名、信息源列表，仍以 `../SKILL.md` 阶段一（开刊）确认 + 本期实际使用为准。
+- **内容对等**：发刊时按 `CHECKLIST.md`「五、HTML 版自查」核对 HTML 与 Markdown 逐项一致。
 
 ## 交叉引用
 
-- 流程与命令：`../SKILL.md`「步骤 5 — HTML 版生成」「步骤 6 — PDF 版生成」
-- 交付自查：`CHECKLIST.md`「七、HTML / PDF 版自查」
-- 成品命名：`../SKILL.md`「成品命名规范」
-- 报刊零件措辞：`写作风格.md` Part 7
+- 流程与命令：`../SKILL.md`「阶段八 · 出版」
+- 交付自查：`CHECKLIST.md`「五、HTML / PDF 版自查」
+- 零件措辞与版面结构（唯一事实源）：`版面与零件.md`
+- 成品命名：`版面与零件.md` §6
 - 发布渠道待决项：`设计规格.md` §3（本 HTML/PDF 版即「发布渠道落地」的第一步：通用、可打印的网页版）
