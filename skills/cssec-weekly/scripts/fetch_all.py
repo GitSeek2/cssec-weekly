@@ -17,8 +17,8 @@
 但 stdout 汇总里显式列出失败源）。
 
 用法:
-    uv run python scripts/fetch_all.py --start 2026-08-14 --end 2026-08-24 --dirname CS26-0804-TP
-    uv run python scripts/fetch_all.py --days 10 --dirname CS26-0804-TP
+    uv run python scripts/fetch_all.py --start 2026-08-14 --end 2026-08-24 --dirname CS26-0803-TP
+    uv run python scripts/fetch_all.py --days 10 --dirname CS26-0803-TP
     uv run python scripts/fetch_all.py --start … --end … --raw-dir /tmp/raw   # 只落 raw 不建草稿
     uv run python scripts/fetch_all.py --only secrss,thn …                    # 调试单源
 """
@@ -126,7 +126,7 @@ def main():
     ap = argparse.ArgumentParser(description="全源聚合采集器（SKILL.md 阶段二）")
     lib.add_window_args(ap)
     ap.add_argument("--dirname", default=None,
-                    help="本期归档目录名（如 CS26-0804-TP）；缺省时只打印结果不落盘")
+                    help="本期归档目录名（如 CS26-0803-TP）；缺省时只打印结果不落盘")
     ap.add_argument("--raw-dir", default=None,
                     help="raw 存档目录（默认 issues/<dirname>/sources/raw）")
     ap.add_argument("--only", default=None,

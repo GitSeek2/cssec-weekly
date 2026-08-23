@@ -5,7 +5,8 @@
       兼容遗留 `第N期_YYYY-MM-DD`），取最大 N，下一期 = N+1；
       同时兼容历史遗留 `issue-NNN` 目录名。目录为空或不存在则从第 1 期起。
     - 目录名：发刊日（today）驱动的自封刊号 `CSYY-MMWW-TP`（CS=CSSEC 前缀，
-      仿 CN 刊号形态），WW 为周一对齐的「当月第几周」；目录名不再编码期号。
+      仿 CN 刊号形态），WW 为「本月第几期」顺序号（本月已发期数 + 1）；
+      目录名不再编码期号。
     - 时间范围：发刊日为今天，内容覆盖近 `--days` 天（默认 10）。区间 = [今天-days, 今天]。
 
 用法:
@@ -54,21 +55,25 @@ _NAME = re.compile(
 _FILENAME = re.compile(r"第\s*([0-9]+)\s*期", re.UNICODE)
 
 
-def dirname_for(today):
+def dirname_for(today, issues_dir=ISSUES_DIR):
     """新命名：自封刊号 `CSYY-MMWW-TP`（CSSEC 玩梗，仿 CN 刊号形态）。
 
     结构：CS = CSSEC 前缀；YY = 2 位年（占 CN 的省码位，国标里 2X 皆空号，
-    自曝假刊）；MMWW = 2 位月 + 周一对齐的当月第几周（0801 = 8 月第 1 周，
-    恰落在 CN 报纸号段 0001~0999，而周报正是报纸节奏）；TP = 中图分类
+    自曝假刊）；MMWW = 2 位月 + 2 位本月期数；TP = 中图分类
     自动化技术·计算机技术。字典序 == 时间序。
 
-    周一对齐：发刊日所在自然周（周一~周日）在当月排第几；周一落在上月
-    则该周记发刊月第 1 周。每周一发刊时 WW 01~05 顺排。
+    周号 = 顺序号：本月已发刊的期数 + 1（扫描 issues/ 下 CS{YY}-{MM}*
+    目录计数）。发刊偶尔跳周时刊号仍连续（如 8 月第 3 期 = 0803，即使
+    中间隔了一个未发刊的自然周）；每周一发刊通常 01~05 顺排。
     """
     yy, mm = today.year % 100, today.month
-    monday = today - dt.timedelta(days=today.weekday())  # 所在自然周的周一
-    ww = 1 if monday.month != today.month else (monday.day - 1) // 7 + 1
-    return f"CS{yy:02d}-{mm:02d}{ww:02d}-TP"
+    prefix = "CS{:02d}-{:02d}".format(yy, mm)
+    n = 0
+    if os.path.isdir(issues_dir):
+        n = sum(1 for name in os.listdir(issues_dir)
+                if name.startswith(prefix)
+                and os.path.isdir(os.path.join(issues_dir, name)))
+    return "CS{:02d}-{:02d}{:02d}-TP".format(yy, mm, n + 1)
 
 
 def existing_issues(issues_dir=ISSUES_DIR):
@@ -135,7 +140,7 @@ def compute(today=None, days=10, mode="rolling", issues_dir=ISSUES_DIR,
         # 命名分工：目录 = 自封刊号（CSYY-MMWW-TP，WW 周一对齐，字典序==时间序）；
         # 文件 = 人类可读标题（CSSEC 周报 · 第 N 期，不补零，md/html/pdf 共用）。
         # 详见 SKILL.md「成品命名规范」。
-        "dirname": dirname_for(today),
+        "dirname": dirname_for(today, issues_dir),
         "filename": f"CSSEC 周报 · 第 {issue} 期",
         "existing_max": existing_max,
         "errors": [],

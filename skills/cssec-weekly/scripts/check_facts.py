@@ -15,7 +15,7 @@
 lint.py）；文件读不到才退非 0。
 
 用法:
-    uv run python scripts/check_facts.py "issues/CS26-0804-TP/CSSEC 周报 · 第 3 期.md"
+    uv run python scripts/check_facts.py "issues/CS26-0803-TP/CSSEC 周报 · 第 3 期.md"
     uv run python scripts/check_facts.py 成品.md --json
 """
 
