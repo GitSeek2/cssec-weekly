@@ -69,9 +69,6 @@ BANNED = [
     ("不是X而是Y",
      r"(?:不再?是|并不是)[^，。；\n]{1,12}[，]?\s*而是",
      "对比句式只是换种说法复述，直接写事实（Part 4 C 类）"),
-    ("下期预告",
-     r"^下期预告[：:]",
-     "v2.1 已废弃该零件：赛事预告由「赛事活动」板块承担，文末直接反馈入口（版面与零件.md）"),
 ]
 
 # 空建议：句内含建议动词但无具体版本/对象（Part 4 D 类）
@@ -287,6 +284,52 @@ def check_fullwidth_punct(lines, errs):
                          "URL/行内代码/HH:MM/前后皆 ASCII 的专名冒号自动豁免（写作风格 Part 5）"))
 
 
+def check_loose_structure(lines, doc, errs):
+    """版外结构（通用结构契约，替代逐条禁令）——契约 = 版面与零件.md §1 成品骨架。
+
+    骨架定义全部合法结构：骨架里没有的位置不出现内容。两条通用规则：
+      1) 出处行是条目收尾——其后到下一个结构性元素（H2/H3/分隔线/文末零件）
+         之间不允许任何内容行（「下期预告」式私货、自创栏目一律在此被抓住）；
+      2) 板块 H2 与其首个 H3 条目之间不允许内容行（板块无栏导语）。
+    头条 section 除外（五段链正文即内容，含相关文献列表）。
+    """
+    def _partish(s):
+        return (_PUBNO_LINE.match(s) or md2html._REPO.match(s)
+                or md2html._DATELINE.match(s) or md2html._FEEDBACK.match(s)
+                or md2html._COLOPHON.match(s)
+                or _strip_inline_markup(s) == "相关文献")
+
+    in_tail = False          # 处于出处行之后
+    pre_item = False         # 处于板块 H2 与首个 H3 之间
+    cur_headline = False
+    for i, line in enumerate(lines, 1):
+        s = line.strip()
+        if not s:
+            continue
+        if s.startswith("## "):
+            cur_headline = s[3:].strip().startswith("本期主题")
+            in_tail = False
+            pre_item = not cur_headline
+            continue
+        if s.startswith("出处"):
+            in_tail = True   # 出处行是条目收尾（先于结构行判断：出处亦属结构）
+            pre_item = False
+            continue
+        if s.startswith("### ") or s == "---" or _partish(s) or _is_structural(s):
+            in_tail = False
+            pre_item = False
+            continue
+        if pre_item:
+            errs.append(("版外结构", i, _excerpt(s),
+                         "板块 H2 与首个条目之间不允许内容行（板块无栏导语，"
+                         "版面与零件.md §1 骨架）"))
+            pre_item = False
+        if in_tail:
+            errs.append(("版外结构", i, _excerpt(s),
+                         "出处行是条目收尾，其后不允许游离内容（骨架之外无零件，"
+                         "版面与零件.md §1）"))
+
+
 def check_sentences(section, errs, warns):
     """句级与段级配额（warning）：句长、段落句数、连续三句同构。"""
     is_headline = section["headline"]
@@ -472,6 +515,7 @@ def lint(md_path):
         check_sentences(section, errs, warns)
     check_masthead(doc, errs)
     check_parts(lines, doc, errs)
+    check_loose_structure(lines, doc, errs)
     check_traceability(md_path, lines, errs, warns)
     # 排序：error 优先，按规则名
     errs.sort(key=lambda e: (e[0], e[1]))
@@ -511,7 +555,8 @@ RULE_TABLE = """规则清单（lint.py --list）
 喊话读者      对学生来说/作为安全从业者/我们应该/你需要关注…
 惊人句式      这不是演习/真正的考验刚刚开始/一棍子捅穿/成了提款机
 不是X而是Y    （不再?是|并不是）…而是…
-下期预告      行首「下期预告：」——v2.1 已废弃，赛事预告由赛事板块承担
+版外结构      出处行后的游离内容 / 板块 H2 与首个条目间的内容——
+              结构契约=版面与零件.md §1 骨架，骨架之外无零件
 空建议结尾    应尽快升级/建议及时更新/相关设备应…（句内有版本号则放行）
 半角标点      中文正文出现半角 , ; : ? ! ( )（URL/代码/HH:MM/专名冒号豁免）
 emoji         任何 emoji
@@ -531,7 +576,7 @@ AI 说明源列表 列出的信息源必须在本期素材/成品中出现
 # --list 漂移自检：代码中全部 error 规则名必须出现在 RULE_TABLE，
 # 新增规则不改表会在此报错（手工表格与代码不同源的兜底）。
 _KNOWN_ERROR_RULES = [b[0] for b in BANNED] + [
-    "空建议结尾", "半角标点", "emoji", "箭头",
+    "空建议结尾", "半角标点", "emoji", "箭头", "版外结构",
     "引语溯源", "链接追溯", "AI 说明源列表", "零件缺失"]
 
 
