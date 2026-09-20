@@ -1,6 +1,6 @@
 # 发刊发布：打上「刊号 tag」（如 CS26-0801-TP，即期目录名）并推送后，
-# 自动把该期的 md / html / pdf 三份成品与 sources/ 中间稿发布为 GitHub Release。
-# Release Note 由 HISTORY.md 生成（scripts/release_notes.py）。
+# 自动把该期的 md / pdf 两份成品与整期 zip（含 html 与 sources/ 中间稿）
+# 发布为 GitHub Release。Release Note 由 HISTORY.md 生成（scripts/release_notes.py）。
 name: 发刊发布
 
 on:
@@ -29,16 +29,16 @@ jobs:
             --dirname "$TAG" --history HISTORY.md > RELEASE_NOTES.md
           echo "ISSUE_N=$ISSUE_N" >> "$GITHUB_ENV"
 
-      # 2) 打包资产：三份成品以「刊号」重命名上传（下载文件名一目了然，且规避 GitHub
-      #    对非 ASCII 文件名的简化），另打整期 zip（含 sources/ 中间稿）。
-      #    zip 用 Python 标准库 shutil.make_archive，避免依赖 runner 是否预装 zip 命令
+      # 2) 打包资产：md / pdf 两份成品以「刊号」重命名上传（下载文件名一目了然，
+      #    且规避 GitHub 对非 ASCII 文件名的简化）；html 不作独立资产，只进整期 zip。
+      #    zip 为整期完整存档（三格式 + sources/ 中间稿），用 Python 标准库
+      #    shutil.make_archive，避免依赖 runner 是否预装 zip 命令
       - name: 打包资产
         run: |
           set -euo pipefail
           TAG="${{ github.ref_name }}"
           mkdir -p dist
           cp "issues/$TAG"/CSSEC*.md   "dist/$TAG.md"
-          cp "issues/$TAG"/CSSEC*.html "dist/$TAG.html"
           cp "issues/$TAG"/CSSEC*.pdf  "dist/$TAG.pdf"
           python3 - "$TAG" <<'PY'
           import shutil, sys
