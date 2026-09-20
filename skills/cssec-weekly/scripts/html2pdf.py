@@ -50,26 +50,32 @@ _BROWSER_CANDIDATES = [
 _BROWSER_NAMES = ("msedge", "edge", "chrome", "google-chrome", "chromium")
 
 
-def find_browser(explicit=None):
-    """定位无头浏览器路径：--browser > 环境变量 > 常见路径 > PATH。"""
+def find_browsers(explicit=None):
+    """按优先序返回可用浏览器候选列表：--browser > 环境变量 > 常见路径 > PATH。
+
+    返回列表而非单个路径——首个浏览器打印失败（如 Edge 更新中间态
+    rc=0 不产文件）时由 main 逐个回退尝试下一个。"""
     if explicit:
         if os.path.isfile(explicit):
-            return explicit
+            return [explicit]
         raise FileNotFoundError("--browser 指定的路径不存在: {}".format(explicit))
+    found = []
     env = os.environ.get("CSSEC_PDF_BROWSER")
     if env and os.path.isfile(env):
-        return env
+        found.append(env)
     for cand in _BROWSER_CANDIDATES:
         cand = os.path.expandvars(cand)
-        if os.path.isfile(cand):
-            return cand
+        if os.path.isfile(cand) and cand not in found:
+            found.append(cand)
     for name in _BROWSER_NAMES:
         p = shutil.which(name)
-        if p:
-            return p
-    raise FileNotFoundError(
-        "未找到可用的无头浏览器（Edge/Chrome）。请安装 Edge，或用 "
-        "CSSEC_PDF_BROWSER 环境变量 / --browser 指定浏览器可执行文件路径。")
+        if p and p not in found:
+            found.append(p)
+    if not found:
+        raise FileNotFoundError(
+            "未找到可用的无头浏览器（Edge/Chrome）。请安装 Edge，或用 "
+            "CSSEC_PDF_BROWSER 环境变量 / --browser 指定浏览器可执行文件路径。")
+    return found
 
 
 def print_to_pdf(browser, html_path, pdf_path, timeout=180):
@@ -136,10 +142,17 @@ def main(argv=None):
         if parent:
             os.makedirs(parent, exist_ok=True)
 
-        browser = find_browser(args.browser)
-        ok, err = print_to_pdf(browser, html_path, pdf_path)
+        candidates = find_browsers(args.browser)
+        ok, last_err, tried = False, "", []
+        for browser in candidates:
+            tried.append(browser)
+            ok, last_err = print_to_pdf(browser, html_path, pdf_path)
+            if ok:
+                break
         if not ok:
-            raise RuntimeError(err)
+            raise RuntimeError(
+                "全部 {} 个浏览器候选打印失败（{}）：{}".format(
+                    len(tried), " | ".join(tried), last_err))
         if not (os.path.isfile(pdf_path) and os.path.getsize(pdf_path) > 0):
             raise RuntimeError("产物缺失或为空: {}".format(pdf_path))
 

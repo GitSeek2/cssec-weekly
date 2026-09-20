@@ -35,6 +35,8 @@ import unicodedata
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import md2html  # noqa: E402 —— 复用零件识别正则，两处判定永远一致
+# 零件措辞模板唯一事实源：references/版面与零件.md §2；修改需联动
+# md2html.py 正则/渲染 + 本文件 check_parts 报错文案（如「报刊仓库」措辞）。
 
 # --------------------------------------------------------------------------- #
 # 规则定义区（配额唯一事实源）
@@ -79,6 +81,24 @@ VERSION_HINT = re.compile(r"\d+(?:\.\d+)+")  # 句内有版本号 → 允许具�
 EMOJI = re.compile(
     "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF"
     "\U00002B00-\U00002BFF\U0000FE0F\U00002190-\U000021FF]")
+
+# 中文正文半角标点（error）：半角 , ; : ? ! ( ) 的前或后邻接 CJK/全角字符。
+# 该判定天然豁免 URL、HH:MM 时间（如 22:49）、前后均为 ASCII 的专名冒号
+# （如 CSS CTF 2026: Return of Nexus）；行内代码与 markdown 链接另行掩码。
+_HALF_PUNCT = ",;:?!()"
+_CJK_ADJ = re.compile(
+    "[\u4e00-\u9fff\u3001\u3002\u3000\uff0c\uff1b\uff1a\uff1f\uff01\uff08\uff09"
+    "\u201c\u201d\u2018\u2019\u300a\u300b\u2014\u2026\u00b7\uff5e]")
+_MASK_CODE = re.compile(r"`[^`\n]*`")
+_MASK_LINK = re.compile(r"\[[^\]\n]*\]\([^)\n]*\)")
+_MASK_URL = re.compile(r"https?://[^\s)\n]+")
+
+
+def _mask_nonprose(line):
+    """把行内代码 / markdown 链接 / 裸 URL 掩成等长占位（不参与邻接判定）。"""
+    for pat in (_MASK_CODE, _MASK_LINK, _MASK_URL):
+        line = pat.sub(lambda m: "\u25cf" * len(m.group(0)), line)
+    return line
 
 ATTRIBUTION = re.compile(r"^[—\-–]{1,3}\s*")      # 引用块归属行
 _CURLY = re.compile("“([^”\\n]{4,})”")
@@ -241,6 +261,27 @@ def check_text_rules(text_lines, errs, warns):
                           passive / max(body_chars, 1) * 1000, 1)),
                       "主动句更像新闻（动作 3）"))
     return text
+
+
+def check_fullwidth_punct(lines, errs):
+    """中文正文半角标点 → error（第 7 期曾全刊半角返工，此为机检兜底）。"""
+    for i, line in _iter_body_lines(lines):
+        s = line.strip()
+        if s.startswith(">"):  # 引用块内是他人原话（英文引语原文允许半角）
+            continue
+        masked = _mask_nonprose(line)
+        hits = []
+        for pos, ch in enumerate(masked):
+            if ch not in _HALF_PUNCT:
+                continue
+            prev = masked[pos - 1] if pos else ""
+            nxt = masked[pos + 1] if pos + 1 < len(masked) else ""
+            if _CJK_ADJ.match(prev or "\x00") or _CJK_ADJ.match(nxt or "\x00"):
+                hits.append(ch)
+        if hits:
+            errs.append(("半角标点", i, _excerpt(s),
+                         "中文正文一律全角标点（，。：；？！、（））；"
+                         "URL/行内代码/HH:MM/前后皆 ASCII 的专名冒号自动豁免（写作风格 Part 5）"))
 
 
 def check_sentences(section, errs, warns):
@@ -422,6 +463,7 @@ def lint(md_path):
         lines = f.read().split("\n")
     errs, warns = [], []
     check_text_rules(lines, errs, warns)
+    check_fullwidth_punct(lines, errs)
     doc = parse_doc(lines)
     for section in doc["sections"]:
         check_sentences(section, errs, warns)
@@ -467,12 +509,13 @@ RULE_TABLE = """规则清单（lint.py --list）
 惊人句式      这不是演习/真正的考验刚刚开始/一棍子捅穿/成了提款机
 不是X而是Y    （不再?是|并不是）…而是…
 空建议结尾    应尽快升级/建议及时更新/相关设备应…（句内有版本号则放行）
+半角标点      中文正文出现半角 , ; : ? ! ( )（URL/代码/HH:MM/专名冒号豁免）
 emoji         任何 emoji
 箭头 →        正文（代码块除外）
 引语溯源      “…”与引用块正文必须能在 sources/*.md 中找到
 链接追溯      成品所有链接必须出现在 sources/ 素材中
 AI 说明源列表 列出的信息源必须在本期素材/成品中出现
-零件齐全性    H1 期号+区间 / 刊号行 / 开源仓库行 / 导读 / 发刊电头 /
+零件缺失      H1 期号+区间 / 刊号行 / 开源仓库行 / 导读 / 发刊电头 /
               反馈入口 / AI 撰写说明 / 头条「相关文献」（正则与 md2html.py 共用）
 ======================== warning 配额（报告）========================
 加粗 ≤{bold} 处            直角引号「」≤{corner_quote} 处
@@ -480,6 +523,19 @@ AI 说明源列表 列出的信息源必须在本期素材/成品中出现
 简讯单段 >{brief_para} 句提示    头条单段 >{headline_para} 句提示
 「遭/被」密度 >{passive_density}/千字提示  连续三句同构（疑似排比）
 ===================================================================="""
+
+# --list 漂移自检：代码中全部 error 规则名必须出现在 RULE_TABLE，
+# 新增规则不改表会在此报错（手工表格与代码不同源的兜底）。
+_KNOWN_ERROR_RULES = [b[0] for b in BANNED] + [
+    "空建议结尾", "半角标点", "emoji", "箭头",
+    "引语溯源", "链接追溯", "AI 说明源列表", "零件缺失"]
+
+
+def _check_table_sync():
+    missing = [r for r in _KNOWN_ERROR_RULES if r not in RULE_TABLE]
+    if missing:
+        raise AssertionError(
+            "RULE_TABLE 缺少规则条目（--list 与代码漂移）: {}".format(missing))
 
 
 def main(argv=None):
@@ -491,6 +547,7 @@ def main(argv=None):
 
     if args.list or not args.input:
         if args.list:
+            _check_table_sync()
             print(RULE_TABLE.format(**QUOTAS))
             return 0
         ap.error("需要输入文件（或 --list）")
