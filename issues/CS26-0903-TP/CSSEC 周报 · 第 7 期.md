@@ -408,8 +408,6 @@ UWSP Pointers 主办，Jeopardy 赛制，赛期长达两个多月。
 - 竞赛时间：2026-09-27 ~ 2026-12-06（UTC+8）
 - 链接：[官网](https://pointeroverflowctf.com/) · [CTFtime](https://ctftime.org/event/3020)
 
-下期预告：H7CTF Quals 与 FAUST、SunshineCTF 下周六同日开打，Securinets CTF Quals 10 月 3 日接档。
-
 反馈与勘误：[提交 issue](https://github.com/GitSeek2/cssec-weekly/issues)
 
 ---
