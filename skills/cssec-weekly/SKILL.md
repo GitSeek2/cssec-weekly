@@ -6,7 +6,7 @@ allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
 metadata:
   version: 2.1.0
   author: CSSEC
-compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源代理统一由 `fetch_all.py` 处理，代理地址读环境变量 `CSSEC_PROXY`（默认 `http://127.0.0.1:7897`）。
+compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源代理统一由 `fetch_all.py` 处理，代理地址读环境变量 `CSSEC_PROXY`（默认 `http://127.0.0.1:7897`）；`verify_release.py` 需 `uv run --with pymupdf`（临时依赖，不落环境）。
 ---
 
 # CSSEC 周报
@@ -15,17 +15,42 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 >
 > 文风锚点：**通讯社简讯 + 特稿头条**。简讯短句、归因密集、电讯感；头条叙事线、引语、人物动作。写前必读 `references/写作风格.md` 序章 + Part 0 三原则 + Part 1 新闻动作清单——每条简讯至少 1 处句内归因，头条 2~4 处真实引语，这是本刊区别于"AI 摘要合集"的底线。
 
-## 进度清单（每期复制一份，逐阶段勾选）
+## 进度维护（用会话 todo 工具）
+
+每期开刊时用会话的 todo 工具建 8 条任务（八阶段各一条），逐阶段推进勾选，不另设纸面清单。八阶段与两道确认闸门总览：
 
 ```
-[ ] 阶段一 开刊：时间窗/期数确认（issue_meta.py）+ 环境确认 + 上期回顾
-[ ] 阶段二 采集：fetch_all.py 跑全源 + 语义去重选材 → sources/信息池.md、去重合并.md
-[ ] 阶段三 选题会：头条候选 → 用户选定 → 一手素材+引语摘录 → sources/头条素材.md
-[ ] 阶段四 撰写：引语清单 → 初稿 → 作者自改四步
-[ ] 阶段五 编辑终审：审稿.md 五步 → sources/审稿记录.md
-[ ] 阶段六 事实核查：check_facts.py + 头条 claim 表 → sources/事实核对.md
-[ ] 阶段七 质量门禁与定稿：lint.py 修到 error=0 → 落盘 issues/<dirname>/<filename>.md
-[ ] 阶段八 出版：md2html.py → html2pdf.py，三格式齐全
+阶段一 开刊（Gate A：问齐时间窗/环境/运行模式）
+阶段二 采集：fetch_all.py 跑全源 + 语义去重选材 → sources/信息池.md、去重合并.md
+阶段三 选题（Gate B：头条候选必问）
+阶段四 撰写：引语清单 → 初稿 → 作者自改四步 → 定稿候选落盘
+  ★ 无人值守在此止步：报告待确认项，等用户确认后才继续
+阶段五 编辑终审：审稿.md 五步 → sources/审稿记录.md
+阶段六 事实核查：check_facts.py + 头条 claim 表 → sources/事实核对.md
+阶段七 质量门禁与定稿：lint.py 修到 error=0
+阶段八 出版：md2html.py → html2pdf.py → verify_release.py 指纹闸门 → 视觉验收
+```
+
+## 运行模式与确认闸门（HITL 协议）
+
+全刊只有三件事必须用户拍板：**时间窗口径、头条选题、发刊**（发刊见仓库根 `AGENTS.md`）。其余决策在有人值守时随做随报、无人值守时按默认推进并落档——不允许把这三件事"代行"后直接出版。
+
+- **Gate A（阶段一开刊）**：用 AskUserQuestion **一次问齐三问**——①时间窗（7 天 / 10 天默认 / 14 天 / 自定义；rolling 默认 / lastweek）；②环境标注（Agent 工具名与模型名，默认取系统上下文，AI 撰写说明据此写）；③运行模式（有人值守 / 无人值守）。
+- **Gate B（阶段三选题）**：从信息池提炼 2~4 个头条候选后**必问**（N 选 1，含各候选概述与推荐）。
+  - 有人值守：Gate B 问完即续跑，全程不再停。
+  - 无人值守：**流程止步于阶段四末**——初稿与自改完成、定稿候选落盘 `issues/<dirname>/` 后停下，向用户报告三项待确认：头条候选清单与推荐、时间窗默认值（若非用户亲选）、`sources/决策记录.md` 里的全部代行项与 CNVD 补充建议（若有）。用户确认或改选后才执行阶段五~八。
+- **改选预案**：Gate B 改选头条时走最小返工——信息池与赛事草稿不重采，只重做头条素材与撰写；被换下候选的已采素材并入 `sources/信息池.md` 备查，原头条正文里属于板块级新闻的条目回板块简讯。
+- **决策留档**：凡未问用户的判断（板块取舍、采纳清单、赛事选择等）一律记入 `sources/决策记录.md`：
+
+```markdown
+# 决策记录 · 第 N 期
+
+| 决策点 | 取值 | 理由 | 若改选的返工成本 |
+| --- | --- | --- | --- |
+| 时间窗 | rolling 10 天（默认） | 无人值守按 SKILL 默认 | 重跑采集+选材 |
+| 头条候选推荐 | C（已采一手素材） | 信息量/延展性最佳 | 重做素材+撰写 |
+
+（用户确认/改选记录追加于此，含时间）
 ```
 
 ## 你在做什么
@@ -53,7 +78,7 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 
 **上期回顾（先做）**：查上一期目录的 `sources/` 与 GitHub issue 入口——有无读者勘误、上期报道的事件有无重要后续（辞职、判决、补丁、反转）。有则记入信息池备注（作为"追踪报道"线索），无则跳过。
 
-**时间窗确认**：用 AskUserQuestion 问两步——①覆盖天数：7 天 / 10 天（默认）/ 14 天 / 自定义；②对齐：rolling = 当天往前推 N 天（默认）/ lastweek = 上周一 ~ 今天（含今天）。根据选择跑 `issue_meta.py`：
+**时间窗与环境确认（Gate A）**：按「运行模式与确认闸门」节的 Gate A 一次问齐三问（时间窗口径、环境标注、运行模式），据答案跑 `issue_meta.py`：
 
 ```
 uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py                      # rolling + 默认 10 天
@@ -61,9 +86,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek      # �
 uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode rolling --days <天数>
 ```
 
-输出 JSON：`issue`（期号）、`start`/`end`/`range`（时间窗）、`days`/`days_note`（跨度天数及口径：含头含尾，start 与 end 两天均计入）、`dirname`（归档目录 = 自封刊号 `CSYY-MMWW-TP`）、`filename`（成品文件名 base）。后续各脚本统一透传 `--start <start> --end <end>`。交付目录：成品写 `issues/<dirname>/`，中间文档写 `issues/<dirname>/sources/`。
-
-**环境确认**：从系统上下文提取当前 Agent 工具名与模型名，用 AskUserQuestion 一次确认（AI 撰写说明将据此标注，出版阶段写入）。
+输出 JSON：`issue`（期号）、`start`/`end`/`range`（时间窗）、`days`/`days_note`（跨度天数及口径：含头含尾，start 与 end 两天均计入）、`dirname`（归档目录 = 自封刊号 `CSYY-MMWW-TP`）、`filename`（成品文件名 base）。后续各脚本统一透传 `--start <start> --end <end>`。交付目录：成品写 `issues/<dirname>/`，中间文档写 `issues/<dirname>/sources/`。环境标注（Agent 工具名 / 模型名）以 Gate A 用户确认的为准，记入决策记录。
 
 **出口门禁**：`issue_meta.py` 输出在案；目录 `issues/<dirname>/sources/` 已建。
 
@@ -81,7 +104,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_all.py --start <start> --end <en
 
 **赛事板块**：撰写前跑 `uv run python ${CLAUDE_SKILL_DIR}/scripts/format_events.py --start <start> --end <end>`，它直接输出可粘贴的信息行式 Markdown 片段（UTC+8 竞赛时间 + 官网/CTFtime 双链接），你只润色一句话点睛、删掉不采纳的赛事。
 
-**CNVD（人工辅助）**：它有反爬封锁，脚本无法抓。读条目池后，若"漏洞情报"偏薄，用 AskUserQuestion 问用户："是否有需要补充的选定时间范围内漏洞（CNVD/CVE）？粘贴文本或链接即可。"
+**CNVD（人工辅助）**：它有反爬封锁，脚本无法抓。读条目池后，若"漏洞情报"偏薄：**无人值守时不要中途打断**——把补充建议记入 `sources/决策记录.md`，随 Gate B 的待确认项一并向用户提出（"是否有需要补充的选定时间范围内漏洞（CNVD/CVE）？粘贴文本或链接即可"）；有人值守则可在选题确认时顺带一问。
 
 **落盘**：`sources/信息池.md`（完整表格含未采纳项+理由）、`sources/去重合并.md`（合并记录表：合并后条目/原始条目/理由）。
 
@@ -89,7 +112,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_all.py --start <start> --end <en
 
 ### 阶段三 · 选题会 —— 头条候选与一手素材
 
-**候选**：从信息池提炼 2~4 个候选主题，每个给①事件概述②为什么重要③建议报道角度。用 AskUserQuestion 让用户选 1 个。选题标准：重要性高、信息量足、有延展讲解空间、与读者群体相关。落盘 `sources/头条候选.md`（含用户选定项与时间）。
+**候选（Gate B，必问）**：从信息池提炼 2~4 个候选主题，每个给①事件概述②为什么重要③建议报道角度，用 AskUserQuestion 让用户选 1 个（含推荐项）。选题标准：重要性高、信息量足、有延展讲解空间、与读者群体相关。落盘 `sources/头条候选.md`（含用户选定项与时间）。**无人值守时同样落盘候选与推荐，但不停在此处**——先按推荐项完成阶段三、四，把候选清单作为待确认项之一，在阶段四末的止步点向用户提出；用户改选则按「改选预案」最小返工。
 
 **一手素材补强**（仅头条，板块简讯跳过）：本刊头条不得仅依赖安全内参的转译稿（二次摘要），必须有一手素材撑起纵深。针对选定主题用 WebSearch / WebFetch 检索 1~3 条一手素材，优先级：①厂商官方博客/安全公告 ②监管/法律原文 ③外媒原文深度报道 ④论文/技术分析。
 
@@ -109,11 +132,11 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_all.py --start <start> --end <en
 
 **作者自改**：初稿完成后走写作风格 Part 6 的四步——朗读测试 → 删除（头条"删冗余不删过渡"）→ 导语测试 → 倒金字塔测试。
 
-**出口门禁**：初稿完成且四步自改走完；归因与引语动作已做（lint 阶段会机检计数）。
+**出口门禁**：初稿完成且四步自改走完；归因与引语动作已做（lint 阶段会机检计数）。**无人值守模式到此为止步点**：定稿候选落盘后向用户报告待确认项（头条候选、时间窗默认、决策记录、CNVD 建议），等确认或改选再进入阶段五；有人值守则直接续跑。
 
 ### 阶段五 · 编辑终审 —— 换身份独立重读
 
-先读 `references/审稿.md`，然后**换身份**：放下作者立场，以「第一次拿到这份稿的资深编辑兼目标读者」身份对全文做独立终审。**硬动作：从盘上重新 Read 定稿候选全文再动笔**——不得凭 context 里的写作记忆直接改（写作记忆会替稿子辩护，物理重读才是独立终审）。头条走审稿.md 五步（通读标记 → 逻辑链审查 → 连贯性审查 → 可读性审查 → 润色落笔）；板块简讯用句级标准速检。**硬规则：只改行文，不动事实**——数字、引语、出处一律不改，存疑回 `sources/头条素材.md` / `sources/信息池.md` 核实，核实不了标记进阶段六。
+先读 `references/审稿.md`，然后**换身份**：放下作者立场，以「第一次拿到这份稿的资深编辑兼目标读者」身份对全文做独立终审。**硬动作：从盘上重新 Read 定稿候选全文再动笔**——不得凭 context 里的写作记忆直接改（写作记忆会替稿子辩护，物理重读才是独立终审）。若 Read 被"文件未变更"提示挡下（缓存），改用 Bash 输出全文替代，重读的物理性不能省。头条走审稿.md 五步（通读标记 → 逻辑链审查 → 连贯性审查 → 可读性审查 → 润色落笔）；板块简讯用句级标准速检。**硬规则：只改行文，不动事实**——数字、引语、出处一律不改，存疑回 `sources/头条素材.md` / `sources/信息池.md` 核实，核实不了标记进阶段六。
 
 落盘 `sources/审稿记录.md`（位置 | 问题 | 改法 | 理由 + 「未改动事实」声明）。审稿完成的文本即**定稿候选**。
 
@@ -156,8 +179,15 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/html2pdf.py ${CLAUDE_SKILL_DIR}/../../
 ```
 
 - md2html：单文件 HTML（CSS 全内嵌、离线可看，网络字体 fonts.googleapis.cn 断网自动回退），版式规格见 `references/HTML设计.md`。
-- html2pdf：无头浏览器（Edge/Chrome）打印 A4 PDF，去默认页眉页脚；可用 `CSSEC_PDF_BROWSER` 或 `--browser` 指定浏览器。
-- 生成后按 `references/CHECKLIST.md` 第七节核对 HTML/PDF（内容一致、主题色生效、分页合理）。**异常时脚本退非零——不要忽略报错继续交付。**
+- html2pdf：无头浏览器（Edge/Chrome）打印 A4 PDF，去默认页眉页脚；逐候选自动回退（首个不可用自动试下一个），可用 `CSSEC_PDF_BROWSER` 或 `--browser` 指定浏览器。
+- **出版指纹闸门（必过）**：三格式生成后、送视觉验收前，先跑
+
+  ```
+  uv run --with pymupdf python ${CLAUDE_SKILL_DIR}/scripts/verify_release.py issues/<dirname>
+  ```
+
+  它校验内容指纹（H1/刊号/发刊/导读首句/头条标题在 HTML 与 PDF 中一致——拦截"已生成实为旧文件"的静默失败）、产物 mtime 新于 md、分页孤行（出处行孤行/报尾标题孤尾/空白页），并提供 `--render <dir>` 渲染全页 PNG。**指纹不过不送视觉验收。**
+- **视觉验收协议**：首版与终版各做一次全量页面验收；中间修复循环只重验受影响页（文本层由 verify_release 全量兜底）。生成后按 `references/CHECKLIST.md` 第七节核对 HTML/PDF。**异常时脚本退非零——不要忽略报错继续交付。**
 
 > 发布 / 发刊（追加 `HISTORY.md` 发刊史、打刊号 tag、GitHub Release）见仓库根 `AGENTS.md` —— SKILL 只负责内容创作。
 
