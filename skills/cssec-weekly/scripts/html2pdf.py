@@ -6,14 +6,20 @@
 
 做的事：
     1. 定位本机无头浏览器：候选路径覆盖 Windows（Edge/Chrome，Win11 自带
-       Edge）、macOS 与 Linux 常见安装位置，再到 PATH；可用 CSSEC_PDF_BROWSER
-       环境变量或 --browser 显式指定。
+       Edge）、macOS 与 Linux 常见安装位置，再到 PATH；按优先序逐候选回退
+       （首个打印失败自动试下一个）；可用 CSSEC_PDF_BROWSER 环境变量或
+       --browser 显式指定。
     2. 用 `--headless --print-to-pdf`（附 `--no-pdf-header-footer`，去掉默认
-       页眉页脚）把 HTML 渲染成 PDF。
+       页眉页脚）把 HTML 渲染成 PDF；先打印到 ASCII 临时路径再移动覆盖，
+       防浏览器对非 ASCII 目标路径的静默不写。
     3. 校验产物存在且非空。
+    4. 目录大纲注入（可选）：Chromium 打印不产书签，打印成功后从同目录
+       同名 md 的 H1/H2/H3 用 pymupdf 补写 outline（H2=1 级、H3=2 级），
+       阅读器侧边栏可解析。装了 pymupdf 自动生效（uv run --with pymupdf），
+       未装则跳过不失败。
 
 用法:
-    uv run python scripts/html2pdf.py ../../issues/CS26-0801-TP/CSSEC 周报 · 第 1 期.html
+    uv run --with pymupdf python scripts/html2pdf.py <周报.html>
     uv run python scripts/html2pdf.py 周报.html -o 周报.pdf
 
 输出:
@@ -27,6 +33,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -124,6 +131,70 @@ def _default_output(path):
     return base + ".pdf"
 
 
+def _fingerprint(s):
+    """大纲页定位用的归一化：只留中文/字母/数字（与 verify_release 一致）。"""
+    return re.sub(r"[^\u4e00-\u9fffA-Za-z0-9]", "", s)
+
+
+def inject_outline(html_path, pdf_path):
+    """从同目录同名 md 的 H1/H2/H3 生成 PDF 目录大纲（阅读器侧边栏可解析）。
+
+    Chromium 的 --print-to-pdf 不产书签，打印后用 pymupdf 补写：
+    H2（本期主题/板块）为 1 级、H3（条目）为 2 级、刊头为首个 1 级；
+    页码按标题指纹在 PDF 文本层单调搜索定位。pymupdf 为可选依赖——
+    未安装时跳过并提示（不失败），用 `uv run --with pymupdf` 运行即启用。
+    返回 (注入条数 or None)。
+    """
+    try:
+        import pymupdf
+    except ImportError:
+        print("提示: 未装 pymupdf，跳过目录大纲注入"
+              "（如需大纲：uv run --with pymupdf 运行本脚本）")
+        return None
+
+    md_path = os.path.splitext(html_path)[0] + ".md"
+    if not os.path.isfile(md_path):
+        print("提示: 未找到同名 md（{}），跳过目录大纲注入".format(md_path))
+        return None
+
+    headings, issue_no = [], None
+    with open(md_path, "r", encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if issue_no is None and s.startswith("# "):
+                m = re.search(r"第\s*(\d+)\s*期", s)
+                issue_no = m.group(1) if m else ""
+            elif s.startswith("## ") and not s.startswith("### "):
+                headings.append((1, s[3:].strip()))
+            elif s.startswith("### "):
+                headings.append((2, s[4:].strip()))
+    if not headings:
+        return 0
+
+    doc = pymupdf.open(pdf_path)
+    page_fps = [_fingerprint(p.get_text()) for p in doc]
+    toc = [[1, "CSSEC 周报 第 {} 期".format(issue_no) if issue_no else "CSSEC 周报", 1]]
+    cur_page = 0  # 标题按文档顺序单调出现，从上一命中页起向后找
+    dropped = []
+    for level, title in headings:
+        fp = _fingerprint(title)
+        if not fp:
+            continue
+        hit = next((i for i in range(cur_page, doc.page_count) if fp in page_fps[i]), None)
+        if hit is None:
+            dropped.append(title[:20])
+            continue
+        cur_page = hit
+        toc.append([level, title, hit + 1])
+    doc.set_toc(toc)
+    doc.saveIncr()  # 增量保存：只加大纲对象，不动页面内容
+    doc.close()
+    if dropped:
+        print("提示: {} 个标题未在 PDF 定位到，未进大纲: {}".format(
+            len(dropped), " / ".join(dropped)))
+    return len(toc)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="周报 HTML → PDF（无头浏览器打印）")
     ap.add_argument("input", help="输入 HTML 文件路径（md2html.py 产物）")
@@ -156,7 +227,10 @@ def main(argv=None):
         if not (os.path.isfile(pdf_path) and os.path.getsize(pdf_path) > 0):
             raise RuntimeError("产物缺失或为空: {}".format(pdf_path))
 
+        n_outline = inject_outline(html_path, pdf_path)
         print("已生成: {}".format(pdf_path))
+        if n_outline:
+            print("目录大纲: {} 条（阅读器侧边栏可解析）".format(n_outline))
         return 0
     except Exception as e:  # noqa: BLE001
         print("错误: {}".format(e), file=sys.stderr)

@@ -37,7 +37,7 @@
 
 **机检闸门（先过这个）**
 
-- [ ] `uv run --with pymupdf python scripts/verify_release.py issues/<dirname>` 退出码 0：三格式齐全非空、内容指纹一致（H1/刊号/发刊/导读首句/头条标题在 HTML 与 PDF 文本层均命中，拦截旧文件静默放行）、产物 mtime 新于 md、无出处行孤行 / 报尾标题孤尾 / 空白页。
+- [ ] `uv run --with pymupdf python scripts/verify_release.py issues/<dirname>` 退出码 0：三格式齐全非空、内容指纹一致（H1/刊号/发刊/导读首句/头条标题在 HTML 与 PDF 文本层均命中，拦截旧文件静默放行）、产物 mtime 新于 md、目录大纲已注入（≥3 条）、无出处行孤行 / 报尾标题孤尾 / 空白页。
 
 **人工与视觉项（机检后复核）**
 

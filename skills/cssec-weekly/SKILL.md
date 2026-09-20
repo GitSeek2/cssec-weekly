@@ -6,7 +6,7 @@ allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
 metadata:
   version: 2.2.0
   author: CSSEC
-compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源代理统一由 `fetch_all.py` 处理，代理地址读环境变量 `CSSEC_PROXY`（默认 `http://127.0.0.1:7897`）；`verify_release.py` 需 `uv run --with pymupdf`（临时依赖，不落环境）。
+compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源代理统一由 `fetch_all.py` 处理，代理地址读环境变量 `CSSEC_PROXY`（默认 `http://127.0.0.1:7897`）；`html2pdf.py`（目录大纲注入）与 `verify_release.py` 需 `uv run --with pymupdf`（临时依赖，不落环境）。
 ---
 
 # CSSEC 周报
@@ -175,11 +175,11 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/lint.py issues/<dirname>/<filename>.md
 
 ```
 uv run python ${CLAUDE_SKILL_DIR}/scripts/md2html.py ${CLAUDE_SKILL_DIR}/../../issues/<dirname>/<filename>.md
-uv run python ${CLAUDE_SKILL_DIR}/scripts/html2pdf.py ${CLAUDE_SKILL_DIR}/../../issues/<dirname>/<filename>.html
+uv run --with pymupdf python ${CLAUDE_SKILL_DIR}/scripts/html2pdf.py ${CLAUDE_SKILL_DIR}/../../issues/<dirname>/<filename>.html
 ```
 
 - md2html：单文件 HTML（CSS 全内嵌、离线可看，网络字体 fonts.googleapis.cn 断网自动回退），版式规格见 `references/HTML设计.md`。
-- html2pdf：无头浏览器（Edge/Chrome）打印 A4 PDF，去默认页眉页脚；逐候选自动回退（首个不可用自动试下一个），可用 `CSSEC_PDF_BROWSER` 或 `--browser` 指定浏览器。
+- html2pdf：无头浏览器（Edge/Chrome）打印 A4 PDF，去默认页眉页脚；逐候选自动回退（首个不可用自动试下一个），可用 `CSSEC_PDF_BROWSER` 或 `--browser` 指定浏览器；**带 pymupdf 运行时自动注入目录大纲**（H2=1 级、H3=2 级，阅读器侧边栏可解析），因此命令统一用 `uv run --with pymupdf`。
 - **出版指纹闸门（必过）**：三格式生成后、送视觉验收前，先跑
 
   ```

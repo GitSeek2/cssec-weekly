@@ -1,9 +1,10 @@
 """出版指纹闸门：三格式成品的一致性与分页质检（阶段八，视觉验收前置）。
 
-拦截两类真实事故（第 7 期实证）：
+拦截三类真实事故（第 7 期实证）：
     1. 「已生成实为旧文件」——无头浏览器 rc=0 但未写目标，旧 PDF 被静默放行；
        用内容指纹（md 关键零件在 HTML 与 PDF 文本层均命中）+ mtime 链拦截。
     2. 分页孤行——条目出处行孤立页首、报尾标题与正文分离、空白页。
+    3. 目录大纲缺失——PDF outline 未注入（阅读器侧边栏无目录）。
 
 用法（pymupdf 为临时依赖，不落环境）:
     uv run --with pymupdf python scripts/verify_release.py issues/<dirname>
@@ -134,6 +135,13 @@ def main(argv=None):
             problems.append("指纹: 「{}」未在 PDF 中命中（PDF 疑为旧文件，重跑出版）".format(name))
 
     check_pagination(pdf, problems)
+    doc2 = pymupdf.open(pdf)
+    toc_n = len(doc2.get_toc())
+    doc2.close()
+    if toc_n < 3:
+        problems.append(
+            "大纲: PDF 目录大纲缺失或过少（{} 条）——"
+            "用 uv run --with pymupdf 重跑 html2pdf.py 以注入".format(toc_n))
     pages = doc.page_count
     doc.close()
 
@@ -151,7 +159,8 @@ def main(argv=None):
                 os.path.join(args.render, "p{:02d}.png".format(i + 1)))
         doc.close()
         print("已渲染 {} 页到 {}".format(pages, args.render))
-    print("结论: 通过（三格式指纹一致，{} 页分页无孤行）".format(pages))
+    print("结论: 通过（三格式指纹一致，{} 页分页无孤行，目录大纲 {} 条）".format(
+        pages, toc_n))
     return 0
 
 
