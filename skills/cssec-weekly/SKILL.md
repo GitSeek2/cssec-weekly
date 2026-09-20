@@ -4,7 +4,7 @@ description: 撰写《CSSEC 周报》。当用户说"写周报/CSSEC周报/本�
 license: MIT
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
 metadata:
-  version: 2.1.0
+  version: 2.2.0
   author: CSSEC
 compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源代理统一由 `fetch_all.py` 处理，代理地址读环境变量 `CSSEC_PROXY`（默认 `http://127.0.0.1:7897`）；`verify_release.py` 需 `uv run --with pymupdf`（临时依赖，不落环境）。
 ---
