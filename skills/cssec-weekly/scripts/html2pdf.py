@@ -33,12 +33,15 @@ import sys
 import tempfile
 from pathlib import Path
 
-# 常见浏览器路径（按优先级；Edge 是 Win11 自带，后三条覆盖 macOS / Linux）
+# 常见浏览器路径（按优先级；Edge 是 Win11 自带，用户级 Chrome 覆盖仅装到
+# %LOCALAPPDATA% 的常见情形，后三条覆盖 macOS / Linux）
 _BROWSER_CANDIDATES = [
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
     r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
     r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe",
+    r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe",
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     "/usr/bin/google-chrome",
@@ -57,6 +60,7 @@ def find_browser(explicit=None):
     if env and os.path.isfile(env):
         return env
     for cand in _BROWSER_CANDIDATES:
+        cand = os.path.expandvars(cand)
         if os.path.isfile(cand):
             return cand
     for name in _BROWSER_NAMES:
@@ -69,9 +73,14 @@ def find_browser(explicit=None):
 
 
 def print_to_pdf(browser, html_path, pdf_path, timeout=180):
-    """headless 打印 HTML → PDF；返回 (ok, stderr_tail)。"""
+    """headless 打印 HTML → PDF；返回 (ok, stderr_tail)。
+
+    Edge 对含非 ASCII 字符的 --print-to-pdf 目标路径偶发静默不写（进程退出码 0
+    但目标未被更新，旧文件原样留存），因此先打印到 ASCII 临时路径，成功后再
+    移动覆盖目标——避免"已生成"实际是旧版的静默失败。"""
     url = Path(html_path).resolve().as_uri()
     tmp = tempfile.mkdtemp(prefix="cssec_pdf_")
+    tmp_pdf = os.path.join(tmp, "out.pdf")
     base = [
         browser,
         "--disable-gpu",
@@ -80,24 +89,28 @@ def print_to_pdf(browser, html_path, pdf_path, timeout=180):
         "--disable-background-networking",
         "--no-pdf-header-footer",
         "--user-data-dir=" + tmp,
-        "--print-to-pdf=" + pdf_path,
+        "--print-to-pdf=" + tmp_pdf,
         url,
     ]
+    ok = False
     # 老版本不认 --headless=new，退回 --headless
     for headless in ("--headless=new", "--headless"):
         try:
             proc = subprocess.run(base + [headless], capture_output=True,
                                   text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
-            shutil.rmtree(tmp, ignore_errors=True)
-            return False, "打印超时（{}s）".format(timeout)
-        if proc.returncode == 0:
-            shutil.rmtree(tmp, ignore_errors=True)
-            return True, ""
+            break
+        if proc.returncode == 0 and os.path.isfile(tmp_pdf) and os.path.getsize(tmp_pdf) > 0:
+            ok = True
+            break
+    if ok:
+        shutil.move(tmp_pdf, pdf_path)
+        shutil.rmtree(tmp, ignore_errors=True)
+        return True, ""
     shutil.rmtree(tmp, ignore_errors=True)
-    tail = (proc.stderr or "").strip().splitlines()[-3:]
+    tail = (proc.stderr or "").strip().splitlines()[-3:] if proc else []
     return False, "浏览器退出码 {}：{}".format(
-        proc.returncode, " | ".join(tail) if tail else "无 stderr 输出")
+        proc.returncode if proc else -1, " | ".join(tail) if tail else "无 stderr 输出")
 
 
 def _default_output(path):

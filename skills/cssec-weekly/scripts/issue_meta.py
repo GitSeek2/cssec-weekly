@@ -132,6 +132,8 @@ def compute(today=None, days=10, mode="rolling", issues_dir=ISSUES_DIR,
     return {
         "issue": issue,
         "days": effective_days,                    # 实际跨度天数（含端点）
+        "days_note": "含头含尾：start 与 end 两天均计入窗口"
+                     "（rolling --days 10 → 11 个日历日）",
         "mode": mode_label,                        # 窗口来源：rolling | lastweek | override
         "today": today.isoformat(),
         "start": start.isoformat(),

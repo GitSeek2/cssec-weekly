@@ -2,8 +2,13 @@
 
 提取的「硬事实」类型（可机械比对的）：
     - CVE 编号        `CVE-2026-1234`
-    - 日期            `2026-08-14` / `8 月 14 日`
+    - 日期            `2026-08-14` / `8 月 14 日` / `7/24`（斜杠月/日）
     - 数字            百分比、金额、带万/亿的量、≥4 位整数、小数（CVSS/权重等）
+
+等价变体互查（`_variants`，只增候选不删）：ISO ↔ 中文日期、斜杠日期
+（`7/24` ≡ `7月24日`）、中文量级 ↔ 英文量级（`180万` ≡ `1.8M` ≡
+`1.8 million`；`2亿` ≡ `200M` ≡ `0.2B`）——素材从英文源抄来斜杠日期/
+英文量级、成稿用中文格式时不再产生假性 unmatched。
 
 比对语料：成品同目录 sources/ 下的 *.md（信息池、头条素材、去重合并、
 头条候选）与 raw/*.json（fetch_all 落盘的原始数据）。事实核对.md 与
@@ -32,6 +37,10 @@ import md2html  # noqa: E402 —— 复用零件正则，跳过零件行
 _CVE = re.compile(r"CVE-\d{4}-\d{4,7}", re.I)
 _DATE_ISO = re.compile(r"\d{4}-\d{1,2}-\d{1,2}")
 _DATE_CN = re.compile(r"\d{1,2}\s*月\s*\d{1,2}\s*日")
+# 斜杠月/日（美式）：月 1-12、日 1-31，允许补零；前后不邻数字/小数点/斜杠，
+# 排除 24/7、版本号（1.2/3.4）、ISO 日期片段。
+_DATE_SLASH = re.compile(
+    r"(?<![.\d/])(0?[1-9]|1[0-2])/(0?[1-9]|[12]\d|3[01])(?![\d/])")
 _NUM = re.compile(
     r"\d[\d,]*(?:\.\d+)?\s*(?:%"
     r"|万美元|万欧元|万英镑|万列伊|亿美元|亿欧元|美元|欧元|英镑|比特币|列伊|元"
@@ -39,7 +48,7 @@ _NUM = re.compile(
     r"|家|人|款|次|条|个|名|位|台|笔|天|小时|分钟|秒|周|年)"
     r"|\d[\d,]*\.\d+"
     r"|\d{4,}")
-_STRUCTURAL_PREFIX = ("#", ">", "- ", "出处", "刊号", "发刊", "下期预告",
+_STRUCTURAL_PREFIX = ("#", ">", "- ", "出处", "刊号", "开源仓库", "发刊",
                       "反馈与勘误", "**AI 撰写说明")
 _STRUCTURAL_RE = re.compile(r"^\d+\.\s")   # 文献编号列表是引文不是主张
 _NUM_BLACKLIST = re.compile(r"^(?:19|20)\d{2}$")  # 裸年份噪声太多，跳过
@@ -78,6 +87,10 @@ def extract_facts(lines):
             spans.append(m.span())
         for m in _DATE_CN.finditer(text):
             facts.append((i, "日期", re.sub(r"\s", "", m.group(0))))
+            spans.append(m.span())
+        for m in _DATE_SLASH.finditer(text):
+            mo, d = (int(x) for x in m.groups())
+            facts.append((i, "日期", "{}/{}".format(mo, d)))
             spans.append(m.span())
         masked = list(text)
         for a, b in spans:
@@ -120,19 +133,45 @@ def load_corpus(md_path):
     return "\n".join(texts)
 
 
+def _fmt_num(x):
+    """整数去掉 .0，小数用 %g（180.0→180、1.8→1.8）。"""
+    return str(int(x)) if float(x).is_integer() else "{:g}".format(x)
+
+
 def _variants(fact):
-    """一个事实的等价写法候选（去千分位逗号 / 去空格 / 全半角）。"""
+    """一个事实的等价写法候选（去千分位逗号 / 去空格 / 全半角 /
+    日期格式互查 / 中文量级↔英文量级换算）。只增不减，不会漏掉原写法。"""
     out = {fact, fact.replace(",", ""), re.sub(r"\s", "", fact)}
     m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})$", fact)
-    if m:  # ISO 日期 ↔ 中文日期互查
+    if m:  # ISO 日期 ↔ 中文日期 / 斜杠日期互查
         y, mo, d = m.groups()
         out.add("{}年{}月{}日".format(y, int(mo), int(d)))
         out.add("{}月{}日".format(int(mo), int(d)))
+        out.add("{}/{}".format(int(mo), int(d)))
     m = re.match(r"(\d{1,2})月(\d{1,2})日$", fact)
     if m:
         mo, d = (int(x) for x in m.groups())
         for y in range(dt_years_floor(), dt_years_ceil()):
             out.add("{}-{:0>2}-{:0>2}".format(y, mo, d))
+        out.add("{}/{}".format(mo, d))       # ↔ 英文斜杠日期（含补零形态）
+        out.add("{:0>2}/{:0>2}".format(mo, d))
+    m = re.match(r"(\d{1,2})/(\d{1,2})$", fact)
+    if m:  # 斜杠日期 ↔ 中文日期互查
+        mo, d = (int(x) for x in m.groups())
+        out.add("{}月{}日".format(mo, d))
+        out.add("{:0>2}/{:0>2}".format(mo, d))
+    m = re.match(r"(\d[\d,]*(?:\.\d+)?)(万|亿)", fact)
+    if m:  # 中文量级 ↔ 英文量级：180万 → 1.8M / 1.8million / 1800000；2亿 → 200M / 0.2B
+        v = float(m.group(1).replace(",", ""))
+        if m.group(2) == "万":
+            m_val, full = v / 100.0, v * 10000.0
+            out.update((_fmt_num(m_val) + "M", _fmt_num(m_val) + "million",
+                        _fmt_num(full)))
+        else:
+            m_val, b_val, full = v * 100.0, v / 10.0, v * 100000000.0
+            out.update((_fmt_num(m_val) + "M", _fmt_num(m_val) + "million",
+                        _fmt_num(b_val) + "B", _fmt_num(b_val) + "billion",
+                        _fmt_num(full)))
     return out
 
 

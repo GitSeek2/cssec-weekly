@@ -8,6 +8,7 @@
 - `scripts/` —— 发刊脚本（`release_notes.py` / `append_history.py`）
 - `issues/<刊号>/` —— 每期成品 + `sources/` 中间稿存档（`<刊号>` 形如 `CS26-0801-TP`）
 - `HISTORY.md` —— 发刊史（逐期记录刊号 / 日期 / 头条，Release Note 数据源）
+- `docs/` —— 调研与设计文档（网安资讯信息流平台新项目：情报源调研 / MVP 需求与设计）
 - `.github/workflows/release.yml` —— 发刊 CI
 - `README.md` —— 项目说明
 

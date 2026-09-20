@@ -8,9 +8,9 @@
 做的事：
     1. 解析受控 Markdown 子集（H1-H4 / 段落 / 行内粗体斜体代码链接 /
        有序无序列表 / 引用 / GFM 表格 / 分隔线 / 代码围栏）。
-    2. 识别周报的报刊零件（H1→刊头、刊号→报头刊号、导读→导读框、发刊→电头、
-       H2→版眉、本期主题→头条版、H3→条目标题、出处→mono 出处行、
-       竞赛时间/链接→mono 数据行、相关文献→文献块、下期预告→预告框、
+    2. 识别周报的报刊零件（H1→刊头、刊号→报头刊号、开源仓库→报头仓库行、
+       导读→导读框、发刊→电头、H2→版眉、本期主题→头条版、H3→条目标题、
+       出处→mono 出处行、竞赛时间/链接→mono 数据行、相关文献→文献块、
        反馈→反馈行、AI 撰写说明→报尾）。
     3. 渲染为单个自包含 HTML 文件（CSS 全内嵌、无外部 CSS/JS；仅头部加载
        Google Fonts 网络字体——官方国内镜像 fonts.googleapis.cn，JetBrains Mono
@@ -271,8 +271,8 @@ _MASTHEAD_RANGE = re.compile(
     r"[（(]\s*(\d{4}-\d{1,2}-\d{1,2}\s*[~～]\s*\d{4}-\d{1,2}-\d{1,2})\s*[）)]")
 _DATELINE = re.compile(r"^发刊[：:]\s*\d{4}-\d{1,2}-\d{1,2}")
 _PUB_NO = re.compile(r"^刊号[：:]")
+_REPO = re.compile(r"^开源仓库[：:]")
 _SOURCE = re.compile(r"^出处[：:]")
-_PREVIEW = re.compile(r"^下期预告[：:]")
 _FEEDBACK = re.compile(r"^反馈与勘误[：:]")
 _COLOPHON = re.compile(r"^\*\*AI 撰写说明\*\*[：:]")
 _COLOPHON_AGENT = re.compile(r"本文由(.+?)调用(.+?)基于")
@@ -295,16 +295,16 @@ def parse_masthead(text):
 
 
 def classify_paragraph(text):
-    """段落角色：dateline / source / preview / feedback / colophon /
-    literature-head / plain。"""
+    """段落角色：dateline / publication-no / repo-link / source / feedback /
+    colophon / literature-head / plain。"""
     if _DATELINE.match(text):
         return "dateline"
     if _PUB_NO.match(text):
         return "publication-no"
+    if _REPO.match(text):
+        return "repo-link"
     if _SOURCE.match(text):
         return "source"
-    if _PREVIEW.match(text):
-        return "preview"
     if _FEEDBACK.match(text):
         return "feedback"
     if strip_inline(text) == "相关文献":
@@ -360,15 +360,12 @@ def _group_section(children):
 
 
 def _process_footer(blocks):
-    """收尾块：预告 / 反馈 / 报尾（吞掉 `---`，报尾支持正则与位置回退）。"""
-    res = {"preview": None, "feedback": None, "colophon": None, "rest": []}
+    """收尾块：反馈 / 报尾（吞掉 `---`，报尾支持正则与位置回退）。"""
+    res = {"feedback": None, "colophon": None, "rest": []}
     last_was_hr = False
     for b in blocks:
         role = _block_role(b)
-        if role == "preview":
-            res["preview"] = b
-            last_was_hr = False
-        elif role == "feedback":
+        if role == "feedback":
             res["feedback"] = b
             last_was_hr = False
         elif role == "colophon":
@@ -388,7 +385,7 @@ def _process_footer(blocks):
 def build_tree(blocks):
     """扁平块 → 语义文档树（masthead / lede / sections / footer）。"""
     blocks = list(blocks)
-    doc = {"masthead": None, "publication_no": None,
+    doc = {"masthead": None, "publication_no": None, "repo_link": None,
            "lede": [], "sections": [], "footer": []}
 
     for i, b in enumerate(blocks):
@@ -403,11 +400,13 @@ def build_tree(blocks):
         j += 1
     blocks = blocks[j:]
 
-    # 刊号：H1 后的 `刊号：` 行，从导读区提取进报头（不在导读框重复渲染）。
+    # 刊号 / 开源仓库：H1 后的零件行，从导读区提取进报头（不在导读框重复渲染）。
     lede = []
     for b in doc["lede"]:
         if b["type"] == "p" and _block_role(b) == "publication-no":
             doc["publication_no"] = _after_label(b["text"]).strip()
+        elif b["type"] == "p" and _block_role(b) == "repo-link":
+            doc["repo_link"] = b["text"]
         else:
             lede.append(b)
     doc["lede"] = lede
@@ -420,11 +419,11 @@ def build_tree(blocks):
             i += 1
             while i < len(blocks) and blocks[i]["type"] != "h2":
                 role = _block_role(blocks[i])
-                # 收尾零件（预告/反馈/报尾）恒进 footer，不进板块；
-                # 一旦出现预告/反馈，其后（含报尾前的 `---`）一并进 footer。
-                if not section["footer_started"] and role in ("preview", "feedback"):
+                # 收尾零件（反馈/报尾）恒进 footer，不进板块；
+                # 一旦出现反馈，其后（含报尾前的 `---`）一并进 footer。
+                if not section["footer_started"] and role == "feedback":
                     section["footer_started"] = True
-                if section["footer_started"] or role in ("preview", "feedback", "colophon"):
+                if section["footer_started"] or role in ("feedback", "colophon"):
                     doc["footer"].append(blocks[i])
                 else:
                     section["children"].append(blocks[i])
@@ -532,9 +531,6 @@ def block_to_html(b):
             return '<p class="dateline">{}</p>'.format(render_inline(b["text"]))
         if role == "source":
             return '<p class="source">{}</p>'.format(render_inline(b["text"]))
-        if role == "preview":
-            return ('<div class="preview"><span class="label">下期预告</span>'
-                    "{}</div>".format(render_inline(_after_label(b["text"]))))
         if role == "feedback":
             return '<p class="feedback">{}</p>'.format(render_inline(b["text"]))
         if role == "colophon":
@@ -609,6 +605,9 @@ a{color:inherit;text-decoration:underline;text-underline-offset:2px}  /* 暗色�
   color:var(--ink-faint);margin:.9rem 0 0}
 .masthead .publication-no{font-family:var(--mono);font-size:.6875rem;letter-spacing:.3em;
   color:var(--ink-faint);margin:.5rem 0 0}
+.masthead .repo-link{font-family:var(--mono);font-size:.6875rem;
+  color:var(--ink-faint);margin:.45rem 0 0}
+.masthead .repo-link a{color:var(--ink-faint)}
 
 /* 导读框：面板 + 左侧绿边；电头右对齐 mono */
 .lede{background:var(--panel);border:1px solid var(--hairline);border-left:3px solid var(--accent);
@@ -672,15 +671,11 @@ blockquote p{margin:0}
 .literature-list li{margin:.35rem 0}
 .literature-list a{color:var(--ink)}
 
-/* 预告 / 反馈 / 报尾 */
-.preview{margin:2.25rem 0 0;padding:.9rem 1.25rem;background:var(--panel);
-  border:1px solid var(--hairline);border-left:3px solid var(--accent)}
-.preview .label{display:block;font-family:var(--mono);font-size:.75rem;letter-spacing:.3em;
-  text-transform:uppercase;color:var(--accent);margin-bottom:.35rem}
+/* 反馈 / 报尾 */
 .feedback{text-align:right;font-family:var(--mono);font-size:.8125rem;color:var(--ink-faint);margin:1rem 0 0}
 .colophon{margin-top:3rem;padding-top:1.5rem;border-top:3px double var(--ink);
   font-family:var(--mono);font-size:.8125rem;color:var(--ink-faint);line-height:1.7}
-.colophon .label{font-family:var(--serif);font-weight:700;color:var(--ink)}
+.colophon .label{display:block;font-family:var(--serif);font-weight:700;color:var(--ink)}
 .colophon p{margin:.5rem 0 0}
 .colophon .colophon-tool,.colophon .colophon-model{color:var(--accent);font-weight:600}
 
@@ -699,7 +694,7 @@ hr{border:0;border-top:1px solid var(--hairline-strong);margin:2rem 0}
   body{background:#fff}
   .report{max-width:none;margin:0;padding:0}
   *{box-shadow:none!important}
-  .lede,.literature,blockquote,table,pre,.preview{break-inside:avoid}
+  .lede,.literature,blockquote,table,pre,.story,.colophon{break-inside:avoid;page-break-inside:avoid}
   h1,h2,h3,h4{break-after:avoid}
   p{orphans:2;widows:2}
   code{white-space:pre-wrap;background:none;padding:0}
@@ -748,6 +743,10 @@ def render_html(doc, title, font_css_url=None):
     if doc["publication_no"]:
         out.append('<p class="publication-no">刊号 {}</p>'.format(
             html.escape(doc["publication_no"])))
+    if doc["repo_link"]:
+        # 仓库行含行内链接，走 render_inline（报头其余部分是纯文本转义）
+        out.append('<p class="repo-link">{}</p>'.format(
+            render_inline(doc["repo_link"])))
     out.append("</header>")
 
     # 导读
@@ -791,8 +790,6 @@ def render_html(doc, title, font_css_url=None):
 
     # 收尾
     f = doc["footer"]
-    if f["preview"]:
-        out.append(block_to_html(f["preview"]))
     if f["feedback"]:
         out.append(block_to_html(f["feedback"]))
     if f["colophon"]:

@@ -9,7 +9,9 @@
     3. 每源原始 JSON 落盘 issues/<dirname>/sources/raw/<源名>.json
        （统一 raw 存档政策：lint.py 链接追溯 / check_facts.py 的语料）。
     4. 合并全部 items 生成 sources/信息池草稿.md —— 按 section_guess/日期
-       排序的表格，采纳列留空，供语义去重与选材（LLM 判断类工作）。
+       排序的表格，采纳列留空，标题/URL/摘要全量输出不截断（截断的 URL
+       无法追溯、截断的标题会诱导从残缺信息推断事实），供语义去重与选材
+       （LLM 判断类工作）。
     5. 跑 format_events.py 生成 sources/赛事条目草稿.md（信息行式 Markdown，
        撰写赛事板块时直接取用）。
 
@@ -84,10 +86,10 @@ def run_events_md(start, end):
         return None
 
 
-def _cell(s, limit=60):
-    """表格单元格：去竖线/换行，截断。"""
-    s = re.sub(r"[|\n\r]", " ", str(s or "")).strip()
-    return s if len(s) <= limit else s[: limit - 1] + "…"
+def _cell(s):
+    """表格单元格：去竖线/换行。不截断——长 URL/标题/摘要全量保留，
+    截断省下的空间只会换来链接追溯报错与事实推断失真。"""
+    return re.sub(r"[|\n\r]", " ", str(s or "")).strip()
 
 
 def render_pool_draft(all_items):
@@ -95,8 +97,9 @@ def render_pool_draft(all_items):
     lines = ["# 信息池草稿（fetch_all 自动生成）", "",
              "> 由 `fetch_all.py` 生成的原始候选池。接下来做语义去重与选材：",
              "> 同一事件多源合并（英文一手链接优先）、剔除企业自宣与低密度信息，",
-             "> 每行填「是否采纳 + 理由」，定稿为 `信息池.md`。表格里的表态句原话",
-             "> 保留在摘要列——简讯引语从这取。", ""]
+             "> 每行填「是否采纳 + 理由」，定稿为 `信息池.md`。多源合并条目的",
+             "> URL 列用空格并列各源完整链接（英文一手源在前）。表格里的表态句",
+             "> 原话保留在摘要列——简讯引语从这取。", ""]
     if not all_items:
         lines.append("（空）")
         return "\n".join(lines) + "\n"
@@ -115,8 +118,8 @@ def render_pool_draft(all_items):
         lines.append("| --- | --- | --- | --- | --- | --- |")
         for it in items:
             lines.append("| {} | {} | {} | {} | {} |  |".format(
-                _cell(it.get("title"), 48), _cell(it.get("source")),
-                _cell(it.get("date")), _cell(it.get("url"), 70),
+                _cell(it.get("title")), _cell(it.get("source")),
+                _cell(it.get("date")), _cell(it.get("url")),
                 _cell(it.get("summary"))))
         lines.append("")
     return "\n".join(lines) + "\n"
@@ -159,10 +162,16 @@ def main():
                                   proxy if use_proxy else None)
         counts[name] = len(items)
         all_items.extend(items)
-        status = "{} 条".format(len(items))
         if errors:
             failed.append((name, errors))
-            status += "，errors: {}".format("; ".join(errors)[:120])
+            status = "{} 条，errors: {}".format(len(items),
+                                               "; ".join(errors)[:120])
+        elif not items:
+            # 0 条且 errors 为空：抓取本身没挂，是窗口内无更新（区分二者，
+            # 静默空响应的残余歧义看 raw/<源名>.json）
+            status = "0 条（窗口内无更新，errors 为空——非抓取失败）"
+        else:
+            status = "{} 条".format(len(items))
         if raw_dir:
             payload = json.dumps({"items": items, "errors": errors},
                                  ensure_ascii=False, indent=2)

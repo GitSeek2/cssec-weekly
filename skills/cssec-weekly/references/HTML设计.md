@@ -48,9 +48,9 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 | `--ink-faint` | `#8A8A84` | 电头、出处、赛事数据、报尾（弱字） |
 | `--hairline` | `#D9D9D8` | 发丝线（条目/表格底/面板边） |
 | `--hairline-strong` | `#CFCECB` | 强线（版眉尾随线/分隔线/引文左边线） |
-| `--panel` | `#F7F7F5` | 面板底（导读框/引文/代码/预告框） |
+| `--panel` | `#F7F7F5` | 面板底（导读框/引文/代码） |
 | `--panel-strong` | `#F0F0EE` | 面板底（文献块） |
-| `--accent` | `#016737` | 主题绿：版眉竖条、kicker、电头标记、导读/预告左绿边、赛事项目符、`§` 小节符 |
+| `--accent` | `#016737` | 主题绿：版眉竖条、kicker、电头标记、导读左绿边、赛事项目符、`§` 小节符 |
 | `--accent-soft` | `#E5F0EA` | 绿浅底（kicker 背景） |
 
 **绿色纪律**：`#016737` 只做**状态与强调**（版眉、标记、左缘），绝不做装饰、绝不上链接。其余全部停留在暖单色——这样整页在「绿」出现前先给人报刊的克制感，绿作为本刊标识少量点睛。链接永远 `color:inherit` 的墨色下划线。
@@ -77,7 +77,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 |---|---|
 | 刊名、版眉 H2、条目标题 H3、头条小标题、文献头、报尾 label | `--serif` |
 | 正文段落、列表、导读正文（西文/数字等宽，中文无衬线） | `--sans` |
-| 期号/日期、刊号、电头、出处、`code`、赛事「竞赛时间/链接」、表格数字、预告/反馈/报尾 | `--mono` |
+| 期号/日期、刊号、开源仓库、电头、出处、`code`、赛事「竞赛时间/链接」、表格数字、反馈/报尾 | `--mono` |
 
 字号基调：正文 `16px / line-height 1.75`（CJK 舒展节奏）；标题 `line-height ~1.2`；微标签 `.8125rem` 大写 + 字距。
 
@@ -89,6 +89,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 |---|---|---|
 | 期数与日期（H1） | 首个 `#`，正则拆 刊名/期号/区间 | `<header class="masthead">`：`h1.publication-name` + `p.issue-meta` |
 | 刊号 | H1 后首段 `^刊号[：:]` | 提升进 `<header class="masthead">`：`p.publication-no`（mono 小字，报头刊号行，不留在导读框） |
+| 开源仓库 | 刊号行后 `^开源仓库[：:]` 段 | 提升进 `<header class="masthead">`：`p.repo-link`（mono 小字弱色；含行内链接，走 `render_inline` 渲染为墨色下划线 `<a>`） |
 | 本期导读 | H1 与首个 H2 间的段落 | `<section class="lede">` 面板框（左绿边） |
 | 发刊电头 | `^发刊[：:] YYYY-MM-DD` | `p.dateline`（mono 右对齐，绿连续破折线标记，放导读框末） |
 | 板块 H2 | 任意 `##` | `<section class="section"><h2 class="section-head">`（绿竖条 + 尾随发丝线） |
@@ -98,7 +99,6 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 | 相关文献 | 剥离行内后等于 `相关文献` 的段 + 后随编号列表；前导 `---` 吞掉 | `<div class="literature">`：`div.literature-head` + `ol.literature-list` |
 | 出处 | `^出处[：:]` | `p.source`（mono 小字，链接保持墨色） |
 | 赛事数据行 | `- 竞赛时间/链接[：:]` 列表项 | `ul.event-meta > li.data-line`（mono，绿 `•` 项目符） |
-| 下期预告 | `^下期预告[：:]` | `div.preview`：`span.label` + 正文 |
 | 反馈入口 | `^反馈与勘误[：:]` | `p.feedback`（右对齐 mono） |
 | AI 撰写说明 | `^\*\*AI 撰写说明\*\*[：:]`（或「末段 + `---` 后」回退）；尾部 `---` 吞掉 | `footer.colophon`（双线报尾；Agent 工具名/模型名主题绿突出） |
 
@@ -138,7 +138,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 `@media print` 是这份 HTML 的「出刊」，不是配角。规则直接借鉴 opencode 站点自带 print 样式：
 
 - 底色转纯白、清除阴影；`.report` 取消宽度限制与内边距。
-- `break-inside:avoid`：导读框、文献块、引文、表格、代码、预告框不跨页断块。
+- `break-inside:avoid`：导读框、文献块、引文、表格、代码不跨页断块。
 - `break-after:avoid`：标题不孤行（标题与下段正文同页）。
 - `orphans:2; widows:2`：段落不出现孤行。
 - 代码 `white-space:pre-wrap`：长行在打印中换行而非溢出截断。
@@ -150,7 +150,7 @@ opencode.ai 文档站（Astro + Starlight）的极简/严谨/美观来自一套�
 ## 10. 设计边界与回退
 
 - **未知 Markdown 块**：转换器对未识别的块做中性通用渲染（普通段落/列表/表格/分隔线），保证**任意** Markdown 报告都能转，只是缺少报刊零件的特殊版式。
-- **报刊零件缺失**：缺刊号/导读/电头/预告/反馈时，对应元素不输出，不报错（各期版式可不同）。
+- **报刊零件缺失**：缺刊号/开源仓库/导读/电头/反馈时，对应元素不输出，不报错（各期版式可不同）。
 - **措辞冲突**：HTML 不重写措辞，只换载体。AI 撰写说明的 Agent 工具名与模型名、信息源列表，仍以 `../SKILL.md` 阶段一（开刊）确认 + 本期实际使用为准。
 - **内容对等**：发刊时按 `CHECKLIST.md`「五、HTML 版自查」核对 HTML 与 Markdown 逐项一致。
 

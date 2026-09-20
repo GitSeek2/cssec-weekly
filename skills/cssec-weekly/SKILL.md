@@ -4,7 +4,7 @@ description: 撰写《CSSEC 周报》。当用户说"写周报/CSSEC周报/本�
 license: MIT
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash]
 metadata:
-  version: 2.0.0
+  version: 2.1.0
   author: CSSEC
 compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）；境外英文源代理统一由 `fetch_all.py` 处理，代理地址读环境变量 `CSSEC_PROXY`（默认 `http://127.0.0.1:7897`）。
 ---
@@ -36,11 +36,11 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 
 ```
 # CSSEC 周报 第 N 期（YYYY-MM-DD ~ YYYY-MM-DD）
-刊号 / 导读 / 发刊电头
+刊号 / 开源仓库 / 导读 / 发刊电头
 ## 本期主题（头条，1 篇深度报道，篇幅最长）
 ## 五大板块（按需出现，无料的板块直接省略，绝不硬凑）
   态势感知 / 漏洞情报 / 前沿技术 / 政策法规 / 赛事活动
-下期预告 / 反馈入口 / AI 撰写说明
+反馈入口 / AI 撰写说明
 ```
 
 > **路径约定**：本技能文件（`SKILL.md` / `references/` / `scripts/`）位于仓库根下的 `skills/cssec-weekly/`，`${CLAUDE_SKILL_DIR}` 即此目录。**仓库根 = `${CLAUDE_SKILL_DIR}/../..`**；成品/存档目录 `issues/` 在仓库根。中间文档一律写入 `issues/<dirname>/sources/`。
@@ -51,7 +51,7 @@ compatibility: 脚本经 `uv run python` 运行（本机 Python 由 uv 管理）
 
 ### 阶段一 · 开刊 —— 确定时间范围与期数
 
-**上期回顾（先做）**：查上一期目录的 `sources/` 与 GitHub issue 入口——有无读者勘误、上期报道的事件有无重要后续（辞职、判决、补丁、反转）。有则记入信息池备注（作为"追踪报道"线索或下期预告素材），无则跳过。
+**上期回顾（先做）**：查上一期目录的 `sources/` 与 GitHub issue 入口——有无读者勘误、上期报道的事件有无重要后续（辞职、判决、补丁、反转）。有则记入信息池备注（作为"追踪报道"线索），无则跳过。
 
 **时间窗确认**：用 AskUserQuestion 问两步——①覆盖天数：7 天 / 10 天（默认）/ 14 天 / 自定义；②对齐：rolling = 当天往前推 N 天（默认）/ lastweek = 上周一 ~ 今天（含今天）。根据选择跑 `issue_meta.py`：
 
@@ -61,7 +61,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode lastweek      # �
 uv run python ${CLAUDE_SKILL_DIR}/scripts/issue_meta.py --mode rolling --days <天数>
 ```
 
-输出 JSON：`issue`（期号）、`start`/`end`/`range`（时间窗）、`dirname`（归档目录 = 自封刊号 `CSYY-MMWW-TP`）、`filename`（成品文件名 base）。后续各脚本统一透传 `--start <start> --end <end>`。交付目录：成品写 `issues/<dirname>/`，中间文档写 `issues/<dirname>/sources/`。
+输出 JSON：`issue`（期号）、`start`/`end`/`range`（时间窗）、`days`/`days_note`（跨度天数及口径：含头含尾，start 与 end 两天均计入）、`dirname`（归档目录 = 自封刊号 `CSYY-MMWW-TP`）、`filename`（成品文件名 base）。后续各脚本统一透传 `--start <start> --end <end>`。交付目录：成品写 `issues/<dirname>/`，中间文档写 `issues/<dirname>/sources/`。
 
 **环境确认**：从系统上下文提取当前 Agent 工具名与模型名，用 AskUserQuestion 一次确认（AI 撰写说明将据此标注，出版阶段写入）。
 
@@ -77,7 +77,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_all.py --start <start> --end <en
 
 它做的事：统一处理境外源代理（读 `CSSEC_PROXY`，默认 `127.0.0.1:7897`，取代手工 export）；每源原始 JSON 落盘 `sources/raw/<源名>.json`；合并全部 items 生成 `sources/信息池草稿.md`（按板块初判/日期排序的表格，采纳列留空）；stdout 给各源条数与失败清单。**主源（secrss）0 条或全部源失败时退出非零**——此时停下来向用户报告网络/代理问题，不要继续。
 
-**你的工作**（判断类，不脚本化）：在信息池草稿上做**语义去重与选材**——同一事件多源出现的合并为一条（**英文一手源与安全内参同事件的，优先保留英文一手链接作为出处**，这是降低单源依赖、贴近真实媒体的核心做法）；剔除企业自宣与低密度信息；每条给"是否采纳+理由"。保留素材摘要中的**表态句原话**（供简讯引语使用）。
+**你的工作**（判断类，不脚本化）：在信息池草稿上做**语义去重与选材**——同一事件多源出现的合并为一条（**英文一手源与安全内参同事件的，优先保留英文一手链接作为出处**，这是降低单源依赖、贴近真实媒体的核心做法），**合并条目的 URL 列用空格并列各源完整链接（英文一手源在前）**——lint 链接追溯以信息池+素材为语料，阶段二就把链接收齐，不要留到门禁阶段补账；剔除企业自宣与低密度信息；每条给"是否采纳+理由"。保留素材摘要中的**表态句原话**（供简讯引语使用）。
 
 **赛事板块**：撰写前跑 `uv run python ${CLAUDE_SKILL_DIR}/scripts/format_events.py --start <start> --end <end>`，它直接输出可粘贴的信息行式 Markdown 片段（UTC+8 竞赛时间 + 官网/CTFtime 双链接），你只润色一句话点睛、删掉不采纳的赛事。
 
@@ -113,7 +113,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/fetch_all.py --start <start> --end <en
 
 ### 阶段五 · 编辑终审 —— 换身份独立重读
 
-先读 `references/审稿.md`，然后**换身份**：放下作者立场，以「第一次拿到这份稿的资深编辑兼目标读者」身份对全文做独立终审。头条走审稿.md 五步（通读标记 → 逻辑链审查 → 连贯性审查 → 可读性审查 → 润色落笔）；板块简讯用句级标准速检。**硬规则：只改行文，不动事实**——数字、引语、出处一律不改，存疑回 `sources/头条素材.md` / `sources/信息池.md` 核实，核实不了标记进阶段六。
+先读 `references/审稿.md`，然后**换身份**：放下作者立场，以「第一次拿到这份稿的资深编辑兼目标读者」身份对全文做独立终审。**硬动作：从盘上重新 Read 定稿候选全文再动笔**——不得凭 context 里的写作记忆直接改（写作记忆会替稿子辩护，物理重读才是独立终审）。头条走审稿.md 五步（通读标记 → 逻辑链审查 → 连贯性审查 → 可读性审查 → 润色落笔）；板块简讯用句级标准速检。**硬规则：只改行文，不动事实**——数字、引语、出处一律不改，存疑回 `sources/头条素材.md` / `sources/信息池.md` 核实，核实不了标记进阶段六。
 
 落盘 `sources/审稿记录.md`（位置 | 问题 | 改法 | 理由 + 「未改动事实」声明）。审稿完成的文本即**定稿候选**。
 
@@ -142,7 +142,7 @@ uv run python ${CLAUDE_SKILL_DIR}/scripts/lint.py issues/<dirname>/<filename>.md
 ```
 
 - **error 级（阻断）**：红线禁令（空升华句式/替读者思考/喊话读者/比喻拟人口号/“不是 X 而是 Y”/空建议结尾/emoji/箭头）、引语溯源（引号内容须存在于素材）、零件齐全性与措辞、AI 说明源列表 ⊆ 实际使用源、链接追溯 ⊆ 信息池+素材。
-- **warning 级（报告不阻断）**：单句超长、破折号/加粗/直角引号配额、段落句数、被动句密度——按朗读感受酌情处理，不强求清零。
+- **warning 级（报告不阻断）**：破折号/加粗/直角引号配额、段落句数、被动句密度——按朗读感受酌情处理，不强求清零。
 
 **落盘与循环**：先把定稿候选写入 `issues/<dirname>/<filename>.md`（期号、日期、目录名来自阶段一输出），再跑上面的 lint——error 原地修复、重跑，循环到退出码 0，文件即为定稿（此后不再改行文）。写前可用 `lint.py --list` 查看全部规则。
 

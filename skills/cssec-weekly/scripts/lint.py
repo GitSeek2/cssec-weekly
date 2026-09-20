@@ -3,7 +3,7 @@
 检查项分两级：
     error   —— 红线（禁令 / 引语溯源 / 零件齐全性 / 溯源比对）。
                存在 error 即退出码 1 = 未定稿（SKILL.md 阶段七门禁）。
-    warning —— 节奏配额（句长 / 标点数量 / 段落句数 / 被动密度）。
+    warning —— 节奏配额（标点数量 / 段落句数 / 被动密度）。
                只报告不阻断，按朗读感受酌情处理。
 
 规则唯一事实源：本脚本。配额数字写在下方 RULES 区，文档只引用不重复
@@ -43,7 +43,6 @@ QUOTAS = {
     "bold": 5,          # 加粗 ** 全篇上限
     "corner_quote": 2,  # 直角引号「」全篇上限
     "dash": 3,          # 破折号 —— 全篇上限
-    "sentence": 40,     # 单句字数基准（超长提示）
     "brief_para": 3,    # 简讯单段句数上限
     "headline_para": 6, # 头条单段句数提示阈值（通常 3~5，叙事段可到 6）
     "passive_density": 8,  # 每 1000 字「遭/被」次数提示阈值
@@ -101,14 +100,6 @@ def _strip_inline_markup(s):
     return md2html.strip_inline(s)
 
 
-def _sentence_len(s):
-    """单句字数：去掉行内代码 / 链接 URL / 空白后计。"""
-    s = re.sub(r"`[^`\n]+`", "", s)
-    s = re.sub(r"\[[^\]\n]*\]\([^)\n]*\)", "", s)
-    s = re.sub(r"https?://\S+", "", s)
-    return len(re.sub(r"\s", "", s))
-
-
 def _split_sentences(para):
     """段落 → 句列表（按 。！？切，保留原文）。"""
     parts = re.split(r"(?<=[。！？])", para)
@@ -144,8 +135,8 @@ def _is_structural(line):
     return (s.startswith("#") or s.startswith(">") or s.startswith("- ")
             or re.match(r"^\d+\.\s", s) is not None or s.startswith("出处")
             or s.startswith("**AI 撰写说明")
-            or md2html._PUB_NO.match(s) or md2html._DATELINE.match(s)
-            or md2html._PREVIEW.match(s) or md2html._FEEDBACK.match(s))
+            or md2html._PUB_NO.match(s) or md2html._REPO.match(s)
+            or md2html._DATELINE.match(s) or md2html._FEEDBACK.match(s))
 
 
 # --------------------------------------------------------------------------- #
@@ -264,12 +255,6 @@ def check_sentences(section, errs, warns):
                               "「{}」单段 {} 句 > {}".format(
                                   _excerpt(title or para, 16), len(sents), limit),
                               "拆段或删句"))
-            for s in sents:
-                n = _sentence_len(s)
-                if n > QUOTAS["sentence"]:
-                    warns.append(("单句超长", 0,
-                                  "{}（{} 字）".format(_excerpt(s), n),
-                                  "朗读换气两次以上则拆"))
             for k in range(len(sents) - 2):
                 a, b, c = sents[k:k + 3]
                 if a[:2] == b[:2] == c[:2] and len(a[:2]) == 2 \
@@ -294,7 +279,7 @@ def check_masthead(doc, errs):
 
 
 def check_parts(lines, doc, errs):
-    have = {"pubno": False, "dateline": False, "lede": False,
+    have = {"pubno": False, "repo": False, "dateline": False, "lede": False,
             "feedback": False, "colophon": False, "literature": False}
     first_h2 = next((i for i, l in enumerate(lines, 1) if l.startswith("## ")),
                     len(lines))
@@ -302,6 +287,8 @@ def check_parts(lines, doc, errs):
         s = line.strip()
         if _PUBNO_LINE.match(s):
             have["pubno"] = True
+        elif md2html._REPO.match(s):
+            have["repo"] = True
         elif md2html._DATELINE.match(s):
             have["dateline"] = True
         elif md2html._FEEDBACK.match(s):
@@ -310,10 +297,13 @@ def check_parts(lines, doc, errs):
             have["colophon"] = True
         elif _strip_inline_markup(s) == "相关文献":
             have["literature"] = True
-        elif 1 < i < first_h2 and s and not s.startswith(("#", ">", "刊号", "发刊")):
+        elif 1 < i < first_h2 and s and not s.startswith(("#", ">", "刊号", "开源仓库", "发刊")):
             have["lede"] = True
     if not have["pubno"]:
         errs.append(("零件缺失", 0, "刊号行", "需 `刊号：CSYY-MMWW-TP`（H1 下、导读前）"))
+    if not have["repo"]:
+        errs.append(("零件缺失", 0, "开源仓库行",
+                     "需 `开源仓库：[报刊仓库](https://github.com/GitSeek2/cssec-weekly/releases)`（刊号行后）"))
     if not have["dateline"]:
         errs.append(("零件缺失", 0, "发刊电头", "需 `发刊：YYYY-MM-DD`（导读后）"))
     if not have["lede"]:
@@ -401,12 +391,13 @@ def check_traceability(md_path, lines, errs, warns):
             errs.append(("引语溯源", i, "“{}”".format(_excerpt(q, 30)),
                          "未在 sources/ 素材中找到——核实原文，或把原话补录进头条素材.md"))
 
-    # 2) 链接追溯（反馈入口行的仓库链接是零件，白名单）
+    # 2) 链接追溯（反馈入口行与开源仓库行的仓库链接是零件，白名单）
     md_text = "\n".join(lines)
     corpus_links = set(collect_links(corpus))
     skip = set()
     for line in lines:
-        if md2html._FEEDBACK.match(line.strip()):
+        s = line.strip()
+        if md2html._FEEDBACK.match(s) or md2html._REPO.match(s):
             skip.update(collect_links(line))
     for url in set(collect_links(md_text)) - skip:
         if url not in corpus_links and url not in corpus:
@@ -433,8 +424,6 @@ def lint(md_path):
     check_text_rules(lines, errs, warns)
     doc = parse_doc(lines)
     for section in doc["sections"]:
-        if section["name"].startswith("下期预告"):
-            continue
         check_sentences(section, errs, warns)
     check_masthead(doc, errs)
     check_parts(lines, doc, errs)
@@ -483,11 +472,11 @@ emoji         任何 emoji
 引语溯源      “…”与引用块正文必须能在 sources/*.md 中找到
 链接追溯      成品所有链接必须出现在 sources/ 素材中
 AI 说明源列表 列出的信息源必须在本期素材/成品中出现
-零件齐全性    H1 期号+区间 / 刊号行 / 导读 / 发刊电头 / 反馈入口 /
-              AI 撰写说明 / 头条「相关文献」（正则与 md2html.py 共用）
+零件齐全性    H1 期号+区间 / 刊号行 / 开源仓库行 / 导读 / 发刊电头 /
+              反馈入口 / AI 撰写说明 / 头条「相关文献」（正则与 md2html.py 共用）
 ======================== warning 配额（报告）========================
 加粗 ≤{bold} 处            直角引号「」≤{corner_quote} 处
-破折号—— ≤{dash} 处          单句 >{sentence} 字提示
+破折号—— ≤{dash} 处
 简讯单段 >{brief_para} 句提示    头条单段 >{headline_para} 句提示
 「遭/被」密度 >{passive_density}/千字提示  连续三句同构（疑似排比）
 ===================================================================="""
