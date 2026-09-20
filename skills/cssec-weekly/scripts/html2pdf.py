@@ -187,8 +187,12 @@ def inject_outline(html_path, pdf_path):
         cur_page = hit
         toc.append([level, title, hit + 1])
     doc.set_toc(toc)
-    doc.saveIncr()  # 增量保存：只加大纲对象，不动页面内容
+    # 全量保存到 ASCII 临时路径再替换（saveIncr 增量更新在个别阅读器上
+    # 大纲渲染不稳，全量重写彻底消除该变量；deflate 压缩控制体积）
+    tmp_pdf = os.path.join(tempfile.mkdtemp(prefix="cssec_toc_"), "out.pdf")
+    doc.save(tmp_pdf, garbage=3, deflate=True)
     doc.close()
+    shutil.move(tmp_pdf, pdf_path)
     if dropped:
         print("提示: {} 个标题未在 PDF 定位到，未进大纲: {}".format(
             len(dropped), " / ".join(dropped)))
