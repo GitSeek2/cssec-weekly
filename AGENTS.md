@@ -28,13 +28,13 @@
    ```bash
    git tag <刊号> && git push origin <刊号>
    ```
-3. **GitHub Actions 自动发布 Release**：把该期 md / html / pdf 三份成品 + `sources/` 中间稿的整期 zip 挂到 Release，Release Note 由 `scripts/release_notes.py` 依据 `HISTORY.md` 生成。
+3. **GitHub Actions 自动发布 Release**：把该期 md / pdf 两份成品 + 整期 zip（三格式与 `sources/` 中间稿）挂到 Release，Release Note 由 `scripts/release_notes.py` 依据 `HISTORY.md` 生成。
 
 ### 发布约束
 
 - **tag = 期目录刊号**（如 `CS26-0802-TP`），与 `issues/` 目录一一对应，无需映射。
 - **Release 资产用已提交成品**，不在 CI 重建（PDF 与本地一致，CI 无需装浏览器 / 中文字体）。
-- **Release 资产命名**：三份成品以刊号重命名上传（`<刊号>.md` / `.html` / `.pdf`，纯 ASCII，下载名清晰），另附整期 zip `CSSEC-Weekly-<刊号>.zip`（含 `sources/`）。
+- **Release 资产命名**：md / pdf 两份成品以刊号重命名上传（`<刊号>.md` / `.pdf`，纯 ASCII，下载名清晰），html 不作独立资产、只进整期 zip；另附整期 zip `CSSEC-Weekly-<刊号>.zip`（三格式 + `sources/` 完整存档）。
 - `HISTORY.md` 缺该期条目时发刊 CI 会失败并提示 —— 先跑 `append_history.py` 再打 tag。
 
 ## HISTORY.md 格式
